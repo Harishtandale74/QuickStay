@@ -9,6 +9,12 @@ export const store = configureStore({
     hotels: hotelSlice,
     bookings: bookingSlice,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: ['persist/PERSIST'],
+      },
+    }),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

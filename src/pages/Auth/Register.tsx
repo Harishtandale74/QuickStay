@@ -1,24 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Eye, EyeOff, Mail, Lock, User, Hotel, Building } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { Eye, EyeOff, Mail, Lock, User, Hotel, Building, MapPin, Phone } from 'lucide-react';
 import { registerSchema, RegisterFormData } from '../../utils/validation';
-import { loginStart, loginSuccess, loginFailure } from '../../store/slices/authSlice';
+import { registerUser, clearError } from '../../store/slices/authSlice';
+import { RootState, AppDispatch } from '../../store/store';
 
 const Register: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const { loading, error, isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   const {
     register,
     handleSubmit,
     watch,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -28,46 +29,50 @@ const Register: React.FC = () => {
 
   const selectedRole = watch('role');
 
-  const onSubmit = async (data: RegisterFormData) => {
-    try {
-      dispatch(loginStart());
-      
-      // Simulate API call for demo
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockUser = {
-        id: '1',
-        email: data.email,
-        name: data.name,
-        role: data.role,
-      };
-      
-      const mockToken = 'mock-jwt-token';
-      
-      dispatch(loginSuccess({ user: mockUser, token: mockToken }));
-      toast.success('Registration successful!');
+  useEffect(() => {
+    if (isAuthenticated) {
       navigate('/dashboard');
-    } catch (error) {
-      dispatch(loginFailure());
-      toast.error('Registration failed. Please try again.');
     }
+  }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    return () => {
+      dispatch(clearError());
+    };
+  }, [dispatch]);
+
+  const onSubmit = async (data: RegisterFormData) => {
+    const { confirmPassword, ...userData } = data;
+    dispatch(registerUser(userData));
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <Link to="/" className="inline-flex items-center space-x-2 mb-8">
-            <div className="bg-primary-600 p-3 rounded-xl">
+            <div className="bg-gradient-to-r from-orange-500 to-red-600 p-3 rounded-xl">
               <Hotel className="h-8 w-8 text-white" />
             </div>
-            <span className="text-2xl font-bold text-gray-900">QuickStay</span>
+            <div className="text-left">
+              <span className="text-2xl font-bold text-gray-900">QuickStay</span>
+              <div className="flex items-center space-x-1 text-sm text-orange-600">
+                <MapPin className="h-3 w-3" />
+                <span>Nagpur</span>
+              </div>
+            </div>
           </Link>
-          <h2 className="text-3xl font-bold text-gray-900">Create your account</h2>
-          <p className="mt-2 text-gray-600">Join thousands of travelers worldwide</p>
+          <h2 className="text-3xl font-bold text-gray-900">Join QuickStay</h2>
+          <p className="mt-2 text-gray-600">Create your account for Nagpur's best hotels</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="bg-white rounded-2xl shadow-xl p-8 border border-orange-100">
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -78,7 +83,7 @@ const Register: React.FC = () => {
                 <input
                   {...register('name')}
                   type="text"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors"
                   placeholder="Enter your full name"
                 />
               </div>
@@ -96,12 +101,30 @@ const Register: React.FC = () => {
                 <input
                   {...register('email')}
                   type="email"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors"
                   placeholder="Enter your email"
                 />
               </div>
               {errors.email && (
                 <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Phone Number
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  {...register('phone')}
+                  type="tel"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors"
+                  placeholder="Enter 10-digit mobile number"
+                />
+              </div>
+              {errors.phone && (
+                <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
               )}
             </div>
 
@@ -112,7 +135,7 @@ const Register: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <label className={`relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
                   selectedRole === 'user' 
-                    ? 'border-primary-500 bg-primary-50' 
+                    ? 'border-orange-500 bg-orange-50' 
                     : 'border-gray-200 hover:border-gray-300'
                 }`}>
                   <input
@@ -121,7 +144,7 @@ const Register: React.FC = () => {
                     value="user"
                     className="sr-only"
                   />
-                  <User className="h-5 w-5 text-primary-600 mr-3" />
+                  <User className="h-5 w-5 text-orange-600 mr-3" />
                   <div>
                     <div className="font-medium text-gray-900">Traveler</div>
                     <div className="text-sm text-gray-600">Book hotels</div>
@@ -129,7 +152,7 @@ const Register: React.FC = () => {
                 </label>
                 <label className={`relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
                   selectedRole === 'hotelOwner' 
-                    ? 'border-primary-500 bg-primary-50' 
+                    ? 'border-orange-500 bg-orange-50' 
                     : 'border-gray-200 hover:border-gray-300'
                 }`}>
                   <input
@@ -138,7 +161,7 @@ const Register: React.FC = () => {
                     value="hotelOwner"
                     className="sr-only"
                   />
-                  <Building className="h-5 w-5 text-primary-600 mr-3" />
+                  <Building className="h-5 w-5 text-orange-600 mr-3" />
                   <div>
                     <div className="font-medium text-gray-900">Owner</div>
                     <div className="text-sm text-gray-600">List hotels</div>
@@ -159,7 +182,7 @@ const Register: React.FC = () => {
                 <input
                   {...register('password')}
                   type={showPassword ? 'text' : 'password'}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors"
                   placeholder="Create a password"
                 />
                 <button
@@ -184,7 +207,7 @@ const Register: React.FC = () => {
                 <input
                   {...register('confirmPassword')}
                   type={showConfirmPassword ? 'text' : 'password'}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors"
                   placeholder="Confirm your password"
                 />
                 <button
@@ -204,15 +227,15 @@ const Register: React.FC = () => {
               <input
                 type="checkbox"
                 required
-                className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
               />
               <span className="ml-2 text-sm text-gray-600">
                 I agree to the{' '}
-                <Link to="/terms" className="text-primary-600 hover:text-primary-700">
+                <Link to="/terms" className="text-orange-600 hover:text-orange-700">
                   Terms of Service
                 </Link>{' '}
                 and{' '}
-                <Link to="/privacy" className="text-primary-600 hover:text-primary-700">
+                <Link to="/privacy" className="text-orange-600 hover:text-orange-700">
                   Privacy Policy
                 </Link>
               </span>
@@ -220,10 +243,17 @@ const Register: React.FC = () => {
 
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-primary-600 hover:bg-primary-700 text-white py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white py-3 rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
             >
-              {isSubmitting ? 'Creating account...' : 'Create Account'}
+              {loading ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Creating account...</span>
+                </div>
+              ) : (
+                'Create Account'
+              )}
             </button>
           </form>
 
@@ -232,12 +262,18 @@ const Register: React.FC = () => {
               Already have an account?{' '}
               <Link
                 to="/login"
-                className="text-primary-600 hover:text-primary-700 font-medium"
+                className="text-orange-600 hover:text-orange-700 font-medium"
               >
                 Sign in
               </Link>
             </p>
           </div>
+        </div>
+
+        {/* Nagpur Info */}
+        <div className="text-center text-sm text-gray-600">
+          <p>Join thousands of travelers exploring Nagpur</p>
+          <p className="text-orange-600 font-medium">🍊 The Orange City awaits you!</p>
         </div>
       </div>
     </div>

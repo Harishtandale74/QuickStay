@@ -1,67 +1,70 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Eye, EyeOff, Mail, Lock, Hotel } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { Eye, EyeOff, Mail, Lock, Hotel, MapPin } from 'lucide-react';
 import { loginSchema, LoginFormData } from '../../utils/validation';
-import { loginStart, loginSuccess, loginFailure } from '../../store/slices/authSlice';
-import api from '../../utils/api';
+import { loginUser, clearError } from '../../store/slices/authSlice';
+import { RootState, AppDispatch } from '../../store/store';
 
 const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
+  const { loading, error, isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (data: LoginFormData) => {
-    try {
-      dispatch(loginStart());
-      
-      // Simulate API call for demo
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockUser = {
-        id: '1',
-        email: data.email,
-        name: 'John Doe',
-        role: 'user' as const,
-      };
-      
-      const mockToken = 'mock-jwt-token';
-      
-      dispatch(loginSuccess({ user: mockUser, token: mockToken }));
-      toast.success('Login successful!');
+  useEffect(() => {
+    if (isAuthenticated) {
       navigate('/dashboard');
-    } catch (error) {
-      dispatch(loginFailure());
-      toast.error('Login failed. Please try again.');
     }
+  }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    return () => {
+      dispatch(clearError());
+    };
+  }, [dispatch]);
+
+  const onSubmit = async (data: LoginFormData) => {
+    dispatch(loginUser(data));
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-red-50 to-pink-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <Link to="/" className="inline-flex items-center space-x-2 mb-8">
-            <div className="bg-primary-600 p-3 rounded-xl">
+            <div className="bg-gradient-to-r from-orange-500 to-red-600 p-3 rounded-xl">
               <Hotel className="h-8 w-8 text-white" />
             </div>
-            <span className="text-2xl font-bold text-gray-900">QuickStay</span>
+            <div className="text-left">
+              <span className="text-2xl font-bold text-gray-900">QuickStay</span>
+              <div className="flex items-center space-x-1 text-sm text-orange-600">
+                <MapPin className="h-3 w-3" />
+                <span>Nagpur</span>
+              </div>
+            </div>
           </Link>
           <h2 className="text-3xl font-bold text-gray-900">Welcome back</h2>
-          <p className="mt-2 text-gray-600">Sign in to your account</p>
+          <p className="mt-2 text-gray-600">Sign in to your Nagpur Hotels account</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="bg-white rounded-2xl shadow-xl p-8 border border-orange-100">
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -72,7 +75,7 @@ const Login: React.FC = () => {
                 <input
                   {...register('email')}
                   type="email"
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors"
                   placeholder="Enter your email"
                 />
               </div>
@@ -90,7 +93,7 @@ const Login: React.FC = () => {
                 <input
                   {...register('password')}
                   type={showPassword ? 'text' : 'password'}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors"
+                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors"
                   placeholder="Enter your password"
                 />
                 <button
@@ -110,13 +113,13 @@ const Login: React.FC = () => {
               <label className="flex items-center">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
                 />
                 <span className="ml-2 text-sm text-gray-600">Remember me</span>
               </label>
               <Link
                 to="/forgot-password"
-                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                className="text-sm text-orange-600 hover:text-orange-700 font-medium"
               >
                 Forgot password?
               </Link>
@@ -124,10 +127,17 @@ const Login: React.FC = () => {
 
             <button
               type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-primary-600 hover:bg-primary-700 text-white py-3 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white py-3 rounded-lg font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
             >
-              {isSubmitting ? 'Signing in...' : 'Sign In'}
+              {loading ? (
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Signing in...</span>
+                </div>
+              ) : (
+                'Sign In'
+              )}
             </button>
           </form>
 
@@ -136,12 +146,28 @@ const Login: React.FC = () => {
               Don't have an account?{' '}
               <Link
                 to="/register"
-                className="text-primary-600 hover:text-primary-700 font-medium"
+                className="text-orange-600 hover:text-orange-700 font-medium"
               >
                 Sign up
               </Link>
             </p>
           </div>
+
+          {/* Demo Credentials */}
+          <div className="mt-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
+            <h4 className="text-sm font-medium text-orange-900 mb-2">Demo Credentials:</h4>
+            <div className="text-xs text-orange-700 space-y-1">
+              <div>Admin: admin@nagpurhotels.com / admin123</div>
+              <div>Hotel Owner: owner1@nagpurhotels.com / owner123</div>
+              <div>User: user1@example.com / user123</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Nagpur Info */}
+        <div className="text-center text-sm text-gray-600">
+          <p>Discover the best hotels in the Orange City</p>
+          <p className="text-orange-600 font-medium">🍊 Nagpur, Maharashtra</p>
         </div>
       </div>
     </div>
