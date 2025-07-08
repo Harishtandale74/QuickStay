@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "npm run dev",
+    "setup": "npm install && echo 'Setup complete! Run npm run dev to start the application.'"
   },
   "dependencies": {
     "lucide-react": "^0.344.0",
