@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Cloud, Sun, CloudRain, Thermometer, Droplets, Wind, Eye } from 'lucide-react';
 import { NAGPUR_WEATHER } from '../../data/nagpurData';
+import { nagpurAPI } from '../../utils/api';
+import useSocket from '../../hooks/useSocket';
 
 interface WeatherData {
   temperature: number;
@@ -22,8 +24,12 @@ const WeatherWidget: React.FC = () => {
   });
 
   const [currentSeason, setCurrentSeason] = useState<'summer' | 'monsoon' | 'winter'>('winter');
+  const { subscribeToWeatherUpdates } = useSocket();
 
   useEffect(() => {
+    // Subscribe to weather updates
+    subscribeToWeatherUpdates();
+    
     // Determine current season based on month
     const currentMonth = new Date().getMonth();
     if (currentMonth >= 2 && currentMonth <= 5) {
@@ -34,26 +40,42 @@ const WeatherWidget: React.FC = () => {
       setCurrentSeason('winter');
     }
 
-    // Simulate weather data (in production, fetch from weather API)
-    const simulateWeather = () => {
-      const conditions: WeatherData['condition'][] = ['sunny', 'cloudy', 'rainy'];
-      const randomCondition = conditions[Math.floor(Math.random() * conditions.length)];
-      
-      setWeather({
-        temperature: Math.floor(Math.random() * 15) + 20, // 20-35°C
-        humidity: Math.floor(Math.random() * 40) + 40, // 40-80%
-        windSpeed: Math.floor(Math.random() * 20) + 5, // 5-25 km/h
-        visibility: Math.floor(Math.random() * 5) + 5, // 5-10 km
-        condition: randomCondition,
-        description: getWeatherDescription(randomCondition)
-      });
+    // Fetch real weather data
+    const fetchWeather = async () => {
+      try {
+        const response = await nagpurAPI.getNagpurWeather();
+        const data = response.data;
+        
+        setWeather({
+          temperature: data.temperature,
+          humidity: data.humidity,
+          windSpeed: data.windSpeed,
+          visibility: data.visibility,
+          condition: data.condition,
+          description: data.description
+        });
+      } catch (error) {
+        console.error('Failed to fetch weather:', error);
+        // Fallback to simulated data
+        const conditions: WeatherData['condition'][] = ['sunny', 'cloudy', 'rainy'];
+        const randomCondition = conditions[Math.floor(Math.random() * conditions.length)];
+        
+        setWeather({
+          temperature: Math.floor(Math.random() * 15) + 20,
+          humidity: Math.floor(Math.random() * 40) + 40,
+          windSpeed: Math.floor(Math.random() * 20) + 5,
+          visibility: Math.floor(Math.random() * 5) + 5,
+          condition: randomCondition,
+          description: getWeatherDescription(randomCondition)
+        });
+      }
     };
 
-    simulateWeather();
-    const interval = setInterval(simulateWeather, 300000); // Update every 5 minutes
+    fetchWeather();
+    const interval = setInterval(fetchWeather, 300000); // Update every 5 minutes
 
     return () => clearInterval(interval);
-  }, []);
+  }, [subscribeToWeatherUpdates]);
 
   const getWeatherDescription = (condition: WeatherData['condition']) => {
     switch (condition) {

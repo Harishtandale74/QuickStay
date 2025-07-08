@@ -5,6 +5,7 @@ import { Menu, X, User, LogOut, Hotel, Search, Settings } from 'lucide-react';
 import { RootState } from '../../store/store';
 import { logout } from '../../store/slices/authSlice';
 import NotificationCenter from '../RealTime/NotificationCenter';
+import ConnectionStatus from '../RealTime/ConnectionStatus';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -42,6 +43,7 @@ const Header: React.FC = () => {
             
             {isAuthenticated ? (
               <div className="flex items-center space-x-4">
+                <ConnectionStatus />
                 <NotificationCenter />
                 
                 <Link

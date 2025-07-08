@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { nagpurAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
+import { AxiosError } from 'axios';
 
 interface User {
   id: string;
@@ -57,8 +58,8 @@ export const loginUser = createAsyncThunk(
       localStorage.setItem('token', response.data.token);
       toast.success('Login successful!');
       return response.data;
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Login failed';
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Login failed';
       toast.error(message);
       return rejectWithValue(message);
     }
@@ -75,12 +76,22 @@ export const registerUser = createAsyncThunk(
     role: 'user' | 'hotelOwner';
   }, { rejectWithValue }) => {
     try {
+      // Validate phone number format for India
+      if (!/^[6-9]\d{9}$/.test(userData.phone)) {
+        throw new Error('Please enter a valid 10-digit Indian mobile number');
+      }
+      
+      // Validate email format
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(userData.email)) {
+        throw new Error('Please enter a valid email address');
+      }
+      
       const response = await nagpurAPI.register(userData);
       localStorage.setItem('token', response.data.token);
       toast.success('Registration successful!');
       return response.data;
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Registration failed';
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Registration failed';
       toast.error(message);
       return rejectWithValue(message);
     }
@@ -93,8 +104,8 @@ export const fetchUserProfile = createAsyncThunk(
     try {
       const response = await nagpurAPI.getProfile();
       return response.data;
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to fetch profile';
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch profile';
       return rejectWithValue(message);
     }
   }
@@ -107,8 +118,8 @@ export const updateUserProfile = createAsyncThunk(
       const response = await nagpurAPI.updateProfile(profileData);
       toast.success('Profile updated successfully!');
       return response.data.user;
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Profile update failed';
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Profile update failed';
       toast.error(message);
       return rejectWithValue(message);
     }

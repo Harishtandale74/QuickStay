@@ -16,6 +16,7 @@ import {
 import { RootState, AppDispatch } from '../../store/store';
 import { fetchMyBookings, fetchBookingAnalytics } from '../../store/slices/bookingSlice';
 import LiveBookingUpdates from '../../components/RealTime/LiveBookingUpdates';
+import LiveDataFeed from '../../components/RealTime/LiveDataFeed';
 import useSocket from '../../hooks/useSocket';
 
 const Dashboard: React.FC = () => {
@@ -419,7 +420,10 @@ const Dashboard: React.FC = () => {
             {activeTab === 'analytics' && (user?.role === 'admin' || user?.role === 'hotelOwner') && (
               <div className="space-y-6">
                 <h2 className="text-xl font-semibold text-gray-900">Live Analytics</h2>
-                <LiveBookingUpdates />
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                  <LiveBookingUpdates />
+                  <LiveDataFeed />
+                </div>
               </div>
             )}
           </div>

@@ -42,8 +42,12 @@ const Register: React.FC = () => {
   }, [dispatch]);
 
   const onSubmit = async (data: RegisterFormData) => {
+    try {
     const { confirmPassword, ...userData } = data;
     dispatch(registerUser(userData));
+    } catch (error) {
+      console.error('Registration error:', error);
+    }
   };
 
   return (
