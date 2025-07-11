@@ -6,7 +6,7 @@ import FeaturedHotels from '../components/Home/FeaturedHotels';
 import Features from '../components/Home/Features';
 import Testimonials from '../components/Home/Testimonials';
 import AIRecommendations from '../components/AI/AIRecommendations';
-import ChatBot from '../components/AI/ChatBot';
+import ExploreNagpur from '../components/Nagpur/ExploreNagpur';
 import NagpurMap from '../components/Nagpur/NagpurMap';
 import WeatherWidget from '../components/Nagpur/WeatherWidget';
 import LocalGuide from '../components/Nagpur/LocalGuide';
@@ -93,7 +93,7 @@ const Home: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
-            <AIRecommendations />
+            <ExploreNagpur />
           </div>
           <div>
             <LocalGuide />
@@ -103,7 +103,6 @@ const Home: React.FC = () => {
       
       <Features />
       <Testimonials />
-      <ChatBot />
     </div>
   );
 };
