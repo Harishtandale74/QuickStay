@@ -99,6 +99,7 @@ const NotificationCenter: React.FC = () => {
         socket.socket.off('newReview');
       };
     }
+  }, [socket.socket]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
