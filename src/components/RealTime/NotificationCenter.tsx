@@ -50,8 +50,8 @@ const NotificationCenter: React.FC = () => {
     setNotifications(mockNotifications);
 
     // Socket.IO event listeners
-    if (socket) {
-      socket.on('newBooking', (data) => {
+    if (socket.socket) {
+      socket.socket.on('newBooking', (data) => {
         const notification: Notification = {
           id: Date.now().toString(),
           type: 'booking',
@@ -65,7 +65,7 @@ const NotificationCenter: React.FC = () => {
         toast.success('New booking received!');
       });
 
-      socket.on('paymentConfirmed', (data) => {
+      socket.socket.on('paymentConfirmed', (data) => {
         const notification: Notification = {
           id: Date.now().toString(),
           type: 'payment',
@@ -79,7 +79,7 @@ const NotificationCenter: React.FC = () => {
         toast.success('Payment confirmed!');
       });
 
-      socket.on('newReview', (data) => {
+      socket.socket.on('newReview', (data) => {
         const notification: Notification = {
           id: Date.now().toString(),
           type: 'review',
@@ -94,12 +94,11 @@ const NotificationCenter: React.FC = () => {
       });
 
       return () => {
-        socket.off('newBooking');
-        socket.off('paymentConfirmed');
-        socket.off('newReview');
+        socket.socket.off('newBooking');
+        socket.socket.off('paymentConfirmed');
+        socket.socket.off('newReview');
       };
     }
-  }, [socket]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 

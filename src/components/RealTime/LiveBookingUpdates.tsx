@@ -114,8 +114,8 @@ const LiveBookingUpdates: React.FC = () => {
     }, 15000); // New booking every 15 seconds
 
     // Socket.IO event listeners
-    if (socket) {
-      socket.on('newBooking', (booking: LiveBooking) => {
+    if (socket.socket) {
+      socket.socket.on('newBooking', (booking: LiveBooking) => {
         setRecentBookings(prev => [booking, ...prev.slice(0, 9)]);
         setLiveMetrics(prev => ({
           ...prev,
@@ -124,7 +124,7 @@ const LiveBookingUpdates: React.FC = () => {
         }));
       });
 
-      socket.on('bookingStatusUpdate', (data: { bookingId: string; status: string }) => {
+      socket.socket.on('bookingStatusUpdate', (data: { bookingId: string; status: string }) => {
         setRecentBookings(prev =>
           prev.map(booking =>
             booking.id === data.bookingId
@@ -136,13 +136,12 @@ const LiveBookingUpdates: React.FC = () => {
 
       return () => {
         clearInterval(interval);
-        socket.off('newBooking');
-        socket.off('bookingStatusUpdate');
+        socket.socket.off('newBooking');
+        socket.socket.off('bookingStatusUpdate');
       };
     }
 
     return () => clearInterval(interval);
-  }, [socket]);
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
