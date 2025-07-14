@@ -142,6 +142,7 @@ const LiveBookingUpdates: React.FC = () => {
     }
 
     return () => clearInterval(interval);
+  }, [socket.socket]);
 
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
