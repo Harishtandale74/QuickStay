@@ -81,7 +81,7 @@ const FeaturedHotels: React.FC = () => {
 
   const filteredHotels = activeFilter === 'all' 
     ? featuredHotels 
-    : featuredHotels.filter(hotel => hotel.category === activeFilter);
+    : featuredHotels.filter(hotel => hotel.category === activeFilter).slice(0, 4); // Limit to 4 for performance
 
   const getAmenityIcon = (amenity: string) => {
     switch (amenity.toLowerCase()) {

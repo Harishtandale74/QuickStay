@@ -9,6 +9,9 @@ import Home from './pages/Home';
 import Hotels from './pages/Hotels';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
+import Explore from './pages/Explore';
+import About from './pages/About';
+import Contact from './pages/Contact';
 import Dashboard from './pages/Dashboard/Dashboard';
 import AddHotel from './pages/Dashboard/AddHotel';
 import AdminPanel from './pages/Dashboard/AdminPanel';
@@ -34,6 +37,9 @@ const AppContent: React.FC = () => {
         <Route path="/" element={<Home />} />
         <Route path="/hotels" element={<Hotels />} />
         <Route path="/hotels/:id" element={<HotelDetails />} />
+        <Route path="/explore" element={<Explore />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/dashboard" element={<Dashboard />} />
