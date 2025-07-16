@@ -22,14 +22,14 @@ const Hotels: React.FC = () => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const socket = useSocket();
 
-  useEffect(() => {
-    // Get search parameters from URL
-    const searchQuery = searchParams.get('q') || '';
-    const checkIn = searchParams.get('checkin') || '';
-    const checkOut = searchParams.get('checkout') || '';
-    const guests = parseInt(searchParams.get('guests') || '2');
-    const area = searchParams.get('area') || '';
+  // Memoize search params to prevent unnecessary re-renders
+  const searchQuery = searchParams.get('q') || '';
+  const checkIn = searchParams.get('checkin') || '';
+  const checkOut = searchParams.get('checkout') || '';
+  const guests = parseInt(searchParams.get('guests') || '2');
+  const area = searchParams.get('area') || '';
 
+  useEffect(() => {
     // Set initial filters
     const initialFilters = {
       ...(searchQuery && { search: searchQuery }),
@@ -39,27 +39,57 @@ const Hotels: React.FC = () => {
       ...(area && { area: [area] }),
     };
 
-    dispatch(setFilters(initialFilters));
-    
-    // Fetch hotels with filters
+    // Only set filters if they're different from current filters
+    if (!areFiltersEqual(filters, initialFilters)) {
+      dispatch(setFilters(initialFilters));
+    }
+  }, [searchQuery, checkIn, checkOut, guests, area, dispatch]);
+
+  // Separate effect for fetching hotels when filters or sortBy change
+  useEffect(() => {
     dispatch(fetchHotels({
-      ...initialFilters,
+      ...filters,
       sortBy,
       page: 1,
       limit: 12
     }));
+  }, [filters, sortBy, dispatch]);
 
-    // Track search activity
-    if (socket && isAuthenticated) {
+  // Track search activity when filters change
+  useEffect(() => {
+    if (socket && isAuthenticated && (filters.search || filters.area)) {
       socket.searchHotels({
-        query: searchQuery,
-        area,
-        checkIn,
-        checkOut,
-        guests
+        query: filters.search || '',
+        area: filters.area?.[0] || '',
+        checkIn: filters.checkIn || '',
+        checkOut: filters.checkOut || '',
+        guests: filters.guests || 2
       });
     }
-  }, [searchParams, sortBy, dispatch, socket, isAuthenticated]);
+  }, [socket, isAuthenticated, filters]);
+
+  // Helper function for deep comparison (same as in slice)
+  const areFiltersEqual = (filters1: any, filters2: any): boolean => {
+    const keys1 = Object.keys(filters1);
+    const keys2 = Object.keys(filters2);
+    
+    if (keys1.length !== keys2.length) return false;
+    
+    for (const key of keys1) {
+      const val1 = filters1[key];
+      const val2 = filters2[key];
+      
+      if (Array.isArray(val1) && Array.isArray(val2)) {
+        if (val1.length !== val2.length || !val1.every((item, index) => item === val2[index])) {
+          return false;
+        }
+      } else if (val1 !== val2) {
+        return false;
+      }
+    }
+    
+    return true;
+  };
 
   const handleFiltersChange = (newFilters: any) => {
     dispatch(setFilters(newFilters));
