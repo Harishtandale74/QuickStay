@@ -56,35 +56,35 @@ const footerSections: FooterSection[] = [
 ];
 
 const trustIndicators: TrustIndicator[] = [
-  { icon: <Shield className="h-5 w-5" />, text: 'SSL Secured' },
-  { icon: <Award className="h-5 w-5" />, text: 'Award Winning' },
-  { icon: <Star className="h-5 w-5" />, text: '4.9/5 Rating' }
+  { icon: <Shield className="h-5 w-5" aria-hidden />, text: 'SSL Secured' },
+  { icon: <Award className="h-5 w-5" aria-hidden />, text: 'Award Winning' },
+  { icon: <Star className="h-5 w-5" aria-hidden />, text: '4.9/5 Rating' }
 ];
 
 const socialLinks: SocialLink[] = [
-  { name: 'Facebook', icon: <Facebook className="h-5 w-5" />, href: 'https://facebook.com/quickstay' },
-  { name: 'Twitter', icon: <Twitter className="h-5 w-5" />, href: 'https://twitter.com/quickstay' },
-  { name: 'Instagram', icon: <Instagram className="h-5 w-5" />, href: 'https://instagram.com/quickstay' },
-  { name: 'LinkedIn', icon: <Linkedin className="h-5 w-5" />, href: 'https://linkedin.com/company/quickstay' }
+  { name: 'Facebook', icon: <Facebook className="h-5 w-5" aria-hidden />, href: 'https://facebook.com/quickstay' },
+  { name: 'Twitter', icon: <Twitter className="h-5 w-5" aria-hidden />, href: 'https://twitter.com/quickstay' },
+  { name: 'Instagram', icon: <Instagram className="h-5 w-5" aria-hidden />, href: 'https://instagram.com/quickstay' },
+  { name: 'LinkedIn', icon: <Linkedin className="h-5 w-5" aria-hidden />, href: 'https://linkedin.com/company/quickstay' }
 ];
 
 const contactInfo = [
   {
     title: '24/7 Support',
     value: '+91-712-QUICKSTAY',
-    icon: <Phone className="h-5 w-5 text-white" />,
+    icon: <Phone className="h-5 w-5 text-white" aria-hidden />,
     aria: 'Call QuickStay Support',
   },
   {
     title: 'Email Support',
     value: 'support@quickstay.com',
-    icon: <Mail className="h-5 w-5 text-white" />,
+    icon: <Mail className="h-5 w-5 text-white" aria-hidden />,
     aria: 'Email QuickStay Support',
   },
   {
     title: 'Headquarters',
     value: 'Sitabuldi, Nagpur, Maharashtra',
-    icon: <MapPin className="h-5 w-5 text-white" />,
+    icon: <MapPin className="h-5 w-5 text-white" aria-hidden />,
     aria: 'QuickStay location',
   }
 ];
@@ -98,7 +98,7 @@ const Footer: React.FC = () => (
         {/* Brand + Trust Indicators */}
         <section className="lg:col-span-1 space-y-6">
           <Link to="/" className="flex items-center space-x-3 group" aria-label="Go to homepage">
-            <span className="bg-gradient-to-r from-orange-500 to-red-600 p-3 rounded-xl group-hover:from-orange-600 group-hover:to-red-700 transition-all duration-300">
+            <span className="bg-gradient-to-r from-orange-500 to-red-600 p-3 rounded-xl group-hover:from-orange-600 group-hover:to-red-700 transition-all duration-300 flex items-center justify-center">
               <Hotel className="h-8 w-8 text-white" aria-hidden />
             </span>
             <span>
@@ -113,9 +113,11 @@ const Footer: React.FC = () => (
             Your premier hotel booking platform for seamless travel experiences in Nagpur, the Orange City of India.
           </p>
           <ul className="space-y-3" aria-label="Our Trust Indicators">
-            {trustIndicators.map((item, idx) => (
+            {trustIndicators.map((item) => (
               <li key={item.text} className="flex items-center space-x-2 text-sm text-gray-400">
-                <span className="text-orange-500">{item.icon}</span>
+                <span className="flex items-center justify-center text-orange-500" aria-hidden>
+                  {item.icon}
+                </span>
                 <span>{item.text}</span>
               </li>
             ))}
@@ -129,9 +131,11 @@ const Footer: React.FC = () => (
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={`Visit us on ${link.name}`}
-                    className="bg-gray-800 hover:bg-gradient-to-r hover:from-orange-500 hover:to-red-600 p-3 rounded-lg transition-all duration-300 transform hover:scale-110"
+                    className="bg-gray-800 hover:bg-gradient-to-r hover:from-orange-500 hover:to-red-600 p-3 rounded-lg transition-all duration-300 transform hover:scale-110 flex items-center justify-center"
                   >
-                    {link.icon}
+                    <span aria-hidden className="flex items-center">
+                      {link.icon}
+                    </span>
                   </a>
                 </li>
               ))}
@@ -168,7 +172,7 @@ const Footer: React.FC = () => (
         <ul className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {contactInfo.map(info => (
             <li key={info.title} className="flex items-center space-x-3">
-              <span className="bg-orange-500 p-2 rounded-lg" aria-hidden>
+              <span className="bg-orange-500 p-2 rounded-lg flex items-center justify-center" aria-hidden>
                 {info.icon}
               </span>
               <span>
