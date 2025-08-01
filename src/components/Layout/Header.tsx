@@ -20,7 +20,9 @@ import {
   Shield,
   Globe,
   Compass,
-  Building
+  Building,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 import { RootState } from '../../store/store';
 import { logout } from '../../store/slices/authSlice';
@@ -31,10 +33,22 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Handle responsive design
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Handle scroll effect
   useEffect(() => {
@@ -58,6 +72,12 @@ const Header: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMenuOpen(false);
+    setShowUserMenu(false);
+  }, [location.pathname]);
+
   const handleLogout = () => {
     dispatch(logout());
     navigate('/');
@@ -71,35 +91,40 @@ const Header: React.FC = () => {
       path: '/',
       icon: <Home className="h-4 w-4" />,
       description: 'Discover hotels in Nagpur',
-      badge: null
+      badge: null,
+      mobileOnly: false
     },
     {
       name: 'Hotels',
       path: '/hotels',
       icon: <Search className="h-4 w-4" />,
       description: 'Search & book hotels',
-      badge: 'Popular'
+      badge: 'Popular',
+      mobileOnly: false
     },
     {
-      name: 'Explore Nagpur',
+      name: 'Explore',
       path: '/explore',
       icon: <Compass className="h-4 w-4" />,
       description: 'Attractions & local guide',
-      badge: 'New'
+      badge: 'New',
+      mobileOnly: false
     },
     {
       name: 'About',
       path: '/about',
       icon: <Info className="h-4 w-4" />,
       description: 'About our platform',
-      badge: null
+      badge: null,
+      mobileOnly: isMobile
     },
     {
       name: 'Contact',
       path: '/contact',
       icon: <Phone className="h-4 w-4" />,
       description: 'Get in touch with us',
-      badge: null
+      badge: null,
+      mobileOnly: isMobile
     }
   ];
 
@@ -130,6 +155,11 @@ const Header: React.FC = () => {
     }
   };
 
+  // Filter navigation items based on screen size
+  const visibleNavItems = navigationItems.filter(item => 
+    !item.mobileOnly || isMobile
+  );
+
   return (
     <header className={`sticky top-0 z-50 transition-all duration-300 ${
       scrolled 
@@ -137,20 +167,20 @@ const Header: React.FC = () => {
         : 'bg-white shadow-sm border-b border-gray-200'
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3 group">
-            <div className={`bg-gradient-to-r from-orange-500 to-red-600 p-2.5 rounded-xl group-hover:from-orange-600 group-hover:to-red-700 transition-all duration-300 ${
+        <div className="flex justify-between items-center h-14 md:h-16">
+          {/* Logo - Responsive */}
+          <Link to="/" className="flex items-center space-x-2 md:space-x-3 group">
+            <div className={`bg-gradient-to-r from-orange-500 to-red-600 p-2 md:p-2.5 rounded-xl group-hover:from-orange-600 group-hover:to-red-700 transition-all duration-300 ${
               scrolled ? 'shadow-lg' : ''
             }`}>
-              <Hotel className="h-6 w-6 text-white" />
+              <Hotel className="h-5 w-5 md:h-6 md:w-6 text-white" />
             </div>
             <div>
-              <span className="text-xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors">
+              <span className="text-lg md:text-xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors">
                 QuickStay
               </span>
               <div className="flex items-center space-x-1 text-xs text-orange-600">
-                <MapPin className="h-3 w-3" />
+                <MapPin className="h-2.5 w-2.5 md:h-3 md:w-3" />
                 <span className="font-medium">Nagpur</span>
                 <div className="w-1 h-1 bg-orange-500 rounded-full animate-pulse"></div>
               </div>
@@ -159,11 +189,11 @@ const Header: React.FC = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center space-x-1">
-            {navigationItems.map((item) => (
+            {visibleNavItems.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
-                className={`group relative px-4 py-2.5 rounded-xl font-medium transition-all duration-300 flex items-center space-x-2 ${
+                className={`group relative px-3 xl:px-4 py-2.5 rounded-xl font-medium transition-all duration-300 flex items-center space-x-2 ${
                   isActivePath(item.path)
                     ? 'text-orange-600 bg-gradient-to-r from-orange-50 to-red-50 shadow-sm'
                     : 'text-gray-700 hover:text-orange-600 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50'
@@ -174,7 +204,7 @@ const Header: React.FC = () => {
                 }`}>
                   {item.icon}
                 </div>
-                <span>{item.name}</span>
+                <span className="text-sm xl:text-base">{item.name}</span>
                 
                 {/* Badge */}
                 {item.badge && (
@@ -197,20 +227,20 @@ const Header: React.FC = () => {
           </nav>
 
           {/* Right Side Actions */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 md:space-x-3">
             {/* Connection Status */}
             <ConnectionStatus />
 
             {isAuthenticated ? (
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 md:space-x-3">
                 {/* Notifications */}
                 <NotificationCenter />
                 
-                {/* Quick Actions */}
-                <div className="hidden md:flex items-center space-x-2">
+                {/* Quick Actions - Desktop Only */}
+                <div className="hidden xl:flex items-center space-x-2">
                   <Link
                     to="/dashboard"
-                    className={`flex items-center space-x-1 px-3 py-2 rounded-lg font-medium transition-all duration-300 ${
+                    className={`flex items-center space-x-1 px-3 py-2 rounded-lg font-medium transition-all duration-300 text-sm ${
                       isActivePath('/dashboard')
                         ? 'text-orange-600 bg-orange-50 shadow-sm'
                         : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50'
@@ -223,7 +253,7 @@ const Header: React.FC = () => {
                   {user?.role === 'admin' && (
                     <Link
                       to="/admin"
-                      className={`flex items-center space-x-1 px-3 py-2 rounded-lg font-medium transition-all duration-300 ${
+                      className={`flex items-center space-x-1 px-3 py-2 rounded-lg font-medium transition-all duration-300 text-sm ${
                         isActivePath('/admin')
                           ? 'text-purple-600 bg-purple-50 shadow-sm'
                           : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
@@ -237,7 +267,7 @@ const Header: React.FC = () => {
                   {user?.role === 'hotelOwner' && (
                     <Link
                       to="/dashboard/add-hotel"
-                      className="flex items-center space-x-1 px-3 py-2 rounded-lg font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-all duration-300"
+                      className="flex items-center space-x-1 px-3 py-2 rounded-lg font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-all duration-300 text-sm"
                     >
                       <Building className="h-4 w-4" />
                       <span>Add Hotel</span>
@@ -249,10 +279,10 @@ const Header: React.FC = () => {
                 <div className="relative user-menu">
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex items-center space-x-3 text-gray-700 hover:text-orange-600 transition-colors p-2 rounded-xl hover:bg-orange-50 group"
+                    className="flex items-center space-x-2 md:space-x-3 text-gray-700 hover:text-orange-600 transition-colors p-2 rounded-xl hover:bg-orange-50 group"
                   >
-                    <div className={`w-10 h-10 bg-gradient-to-r ${getRoleColor(user?.role || 'user')} rounded-full flex items-center justify-center text-white font-bold shadow-lg group-hover:shadow-xl transition-all duration-300`}>
-                      {user?.name ? getUserInitials(user.name) : <User className="h-5 w-5" />}
+                    <div className={`w-8 h-8 md:w-10 md:h-10 bg-gradient-to-r ${getRoleColor(user?.role || 'user')} rounded-full flex items-center justify-center text-white font-bold shadow-lg group-hover:shadow-xl transition-all duration-300 text-sm md:text-base`}>
+                      {user?.name ? getUserInitials(user.name) : <User className="h-4 w-4 md:h-5 md:w-5" />}
                     </div>
                     <div className="hidden md:block text-left">
                       <div className="font-medium text-sm">{user?.name}</div>
@@ -262,16 +292,16 @@ const Header: React.FC = () => {
                   </button>
                   
                   {showUserMenu && (
-                    <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-200 py-2 z-50 animate-scale-in">
+                    <div className="absolute right-0 mt-2 w-64 md:w-72 bg-white rounded-2xl shadow-2xl border border-gray-200 py-2 z-50 animate-scale-in">
                       {/* User Info Header */}
-                      <div className="px-6 py-4 border-b border-gray-100">
+                      <div className="px-4 md:px-6 py-4 border-b border-gray-100">
                         <div className="flex items-center space-x-3">
-                          <div className={`w-12 h-12 bg-gradient-to-r ${getRoleColor(user?.role || 'user')} rounded-full flex items-center justify-center text-white font-bold`}>
-                            {user?.name ? getUserInitials(user.name) : <User className="h-6 w-6" />}
+                          <div className={`w-10 h-10 md:w-12 md:h-12 bg-gradient-to-r ${getRoleColor(user?.role || 'user')} rounded-full flex items-center justify-center text-white font-bold`}>
+                            {user?.name ? getUserInitials(user.name) : <User className="h-5 w-5 md:h-6 md:w-6" />}
                           </div>
                           <div className="flex-1">
-                            <p className="font-semibold text-gray-900">{user?.name}</p>
-                            <p className="text-sm text-gray-600">{user?.email}</p>
+                            <p className="font-semibold text-gray-900 text-sm md:text-base">{user?.name}</p>
+                            <p className="text-xs md:text-sm text-gray-600">{user?.email}</p>
                             <div className="flex items-center space-x-2 mt-1">
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                 user?.role === 'admin' 
@@ -298,7 +328,7 @@ const Header: React.FC = () => {
                         <Link
                           to="/profile"
                           onClick={() => setShowUserMenu(false)}
-                          className="flex items-center space-x-3 px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          className="flex items-center space-x-3 px-4 md:px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                         >
                           <User className="h-4 w-4" />
                           <span>My Profile</span>
@@ -307,7 +337,7 @@ const Header: React.FC = () => {
                         <Link
                           to="/dashboard"
                           onClick={() => setShowUserMenu(false)}
-                          className="flex items-center space-x-3 px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          className="flex items-center space-x-3 px-4 md:px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                         >
                           <Calendar className="h-4 w-4" />
                           <span>My Bookings</span>
@@ -318,7 +348,7 @@ const Header: React.FC = () => {
                             <Link
                               to="/dashboard/add-hotel"
                               onClick={() => setShowUserMenu(false)}
-                              className="flex items-center space-x-3 px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              className="flex items-center space-x-3 px-4 md:px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                             >
                               <Building className="h-4 w-4" />
                               <span>Add Hotel</span>
@@ -326,7 +356,7 @@ const Header: React.FC = () => {
                             <Link
                               to="/dashboard"
                               onClick={() => setShowUserMenu(false)}
-                              className="flex items-center space-x-3 px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                              className="flex items-center space-x-3 px-4 md:px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                             >
                               <Hotel className="h-4 w-4" />
                               <span>Manage Hotels</span>
@@ -338,7 +368,7 @@ const Header: React.FC = () => {
                           <Link
                             to="/admin"
                             onClick={() => setShowUserMenu(false)}
-                            className="flex items-center space-x-3 px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            className="flex items-center space-x-3 px-4 md:px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                           >
                             <Shield className="h-4 w-4" />
                             <span>Admin Panel</span>
@@ -348,7 +378,7 @@ const Header: React.FC = () => {
                         <div className="border-t border-gray-100 mt-2 pt-2">
                           <button
                             onClick={handleLogout}
-                            className="flex items-center space-x-3 px-6 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left"
+                            className="flex items-center space-x-3 px-4 md:px-6 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left"
                           >
                             <LogOut className="h-4 w-4" />
                             <span>Sign Out</span>
@@ -360,16 +390,16 @@ const Header: React.FC = () => {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 md:space-x-3">
                 <Link
                   to="/login"
-                  className="text-gray-700 hover:text-orange-600 font-medium transition-colors px-4 py-2 rounded-lg hover:bg-orange-50"
+                  className="text-gray-700 hover:text-orange-600 font-medium transition-colors px-3 md:px-4 py-2 rounded-lg hover:bg-orange-50 text-sm md:text-base"
                 >
                   Sign In
                 </Link>
                 <Link
                   to="/register"
-                  className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white px-6 py-2.5 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                  className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white px-4 md:px-6 py-2 md:py-2.5 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl text-sm md:text-base"
                 >
                   Sign Up
                 </Link>
@@ -381,7 +411,7 @@ const Header: React.FC = () => {
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="lg:hidden p-2 text-gray-700 hover:text-orange-600 transition-colors rounded-lg hover:bg-orange-50 mobile-menu"
             >
-              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMenuOpen ? <X className="h-5 w-5 md:h-6 md:w-6" /> : <Menu className="h-5 w-5 md:h-6 md:w-6" />}
             </button>
           </div>
         </div>

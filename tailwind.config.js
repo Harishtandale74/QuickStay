@@ -6,6 +6,9 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
+      spacing: {
+        'safe': 'env(safe-area-inset-bottom)',
+      },
       colors: {
         primary: {
           50: '#eff6ff',
@@ -45,10 +48,15 @@ export default {
           600: '#dc2626',
         },
       },
+      screens: {
+        'xs': '475px',
+        '3xl': '1600px',
+      },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',
         'slide-up': 'slideUp 0.6s ease-out',
         'scale-in': 'scaleIn 0.3s ease-out',
+        'bounce-slow': 'bounce 2s infinite',
       },
       keyframes: {
         fadeIn: {
