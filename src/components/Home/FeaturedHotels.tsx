@@ -2,7 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, MapPin, Wifi, Car, Coffee, Dumbbell, Sparkles, TrendingUp, Award, Zap } from 'lucide-react';
 
-const FeaturedHotels: React.FC = () => {
+interface FeaturedHotelsProps {
+  deviceType: 'mobile' | 'tablet' | 'desktop';
+}
+
+const FeaturedHotels: React.FC<FeaturedHotelsProps> = ({ deviceType }) => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [hoveredHotel, setHoveredHotel] = useState<string | null>(null);
 
@@ -81,7 +85,40 @@ const FeaturedHotels: React.FC = () => {
 
   const filteredHotels = activeFilter === 'all' 
     ? featuredHotels 
-    : featuredHotels.filter(hotel => hotel.category === activeFilter).slice(0, 4); // Limit to 4 for performance
+    : featuredHotels.filter(hotel => hotel.category === activeFilter).slice(0, deviceType === 'mobile' ? 2 : 4);
+
+  // Responsive configurations
+  const getResponsiveConfig = () => {
+    switch (deviceType) {
+      case 'mobile':
+        return {
+          padding: 'py-12',
+          titleSize: 'text-2xl md:text-3xl',
+          gridCols: 'grid-cols-1',
+          showFilters: false,
+          maxHotels: 2
+        };
+      case 'tablet':
+        return {
+          padding: 'py-14',
+          titleSize: 'text-3xl',
+          gridCols: 'grid-cols-1 md:grid-cols-2',
+          showFilters: true,
+          maxHotels: 4
+        };
+      default:
+        return {
+          padding: 'py-16',
+          titleSize: 'text-3xl md:text-4xl',
+          gridCols: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
+          showFilters: true,
+          maxHotels: 4
+        };
+    }
+  };
+
+  const config = getResponsiveConfig();
+  const displayHotels = filteredHotels.slice(0, config.maxHotels);
 
   const getAmenityIcon = (amenity: string) => {
     switch (amenity.toLowerCase()) {
@@ -101,7 +138,7 @@ const FeaturedHotels: React.FC = () => {
   };
 
   return (
-    <section className="py-16 bg-gradient-to-br from-gray-50 to-primary-50/30">
+    <section className={`${config.padding} bg-gradient-to-br from-gray-50 to-primary-50/30`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-12 space-y-4">
@@ -109,21 +146,22 @@ const FeaturedHotels: React.FC = () => {
             <Sparkles className="h-4 w-4 text-purple-600" />
             <span className="text-sm font-medium text-purple-900">AI Curated Selection</span>
           </div>
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+          <h2 className={`${config.titleSize} font-bold text-gray-900`}>
             Featured Hotels & Resorts
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className={`${deviceType === 'mobile' ? 'text-lg' : 'text-xl'} text-gray-600 max-w-2xl mx-auto`}>
             Handpicked by our AI based on guest reviews, amenities, and your preferences
           </p>
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap justify-center gap-3 mb-12">
+        {config.showFilters && (
+        <div className={`flex flex-wrap justify-center gap-3 ${deviceType === 'mobile' ? 'mb-8' : 'mb-12'}`}>
           {filters.map((filter) => (
             <button
               key={filter.id}
               onClick={() => setActiveFilter(filter.id)}
-              className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
+              className={`flex items-center space-x-2 ${deviceType === 'mobile' ? 'px-4 py-2' : 'px-6 py-3'} rounded-xl font-medium transition-all duration-300 ${
                 activeFilter === filter.id
                   ? 'bg-gradient-to-r from-primary-600 to-secondary-600 text-white shadow-lg transform scale-105'
                   : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 hover:border-primary-300'
@@ -134,13 +172,14 @@ const FeaturedHotels: React.FC = () => {
             </button>
           ))}
         </div>
+        )}
 
         {/* Hotels Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-          {filteredHotels.map((hotel, index) => (
+        <div className={`${config.gridCols} gap-6 md:gap-8`}>
+          {displayHotels.map((hotel, index) => (
             <div
               key={hotel.id}
-              className="group bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 animate-scale-in"
+              className={`group bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-500 ${deviceType !== 'mobile' ? 'transform hover:-translate-y-2' : ''} animate-scale-in`}
               style={{ animationDelay: `${index * 100}ms` }}
               onMouseEnter={() => setHoveredHotel(hotel.id)}
               onMouseLeave={() => setHoveredHotel(null)}
@@ -149,7 +188,7 @@ const FeaturedHotels: React.FC = () => {
                 <img
                   src={hotel.image}
                   alt={hotel.name}
-                  className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-700"
+                  className={`w-full ${deviceType === 'mobile' ? 'h-48' : 'h-64'} object-cover ${deviceType !== 'mobile' ? 'group-hover:scale-110' : ''} transition-transform duration-700`}
                 />
                 
                 {/* Overlay Badges */}
@@ -180,9 +219,9 @@ const FeaturedHotels: React.FC = () => {
                 </div>
 
                 {/* AI Score */}
-                <div className="absolute bottom-4 right-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-3 py-1 rounded-lg flex items-center space-x-1 shadow-lg">
+                <div className={`absolute bottom-4 right-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white ${deviceType === 'mobile' ? 'px-2 py-1' : 'px-3 py-1'} rounded-lg flex items-center space-x-1 shadow-lg`}>
                   <Sparkles className="h-3 w-3" />
-                  <span className="text-xs font-medium">{hotel.aiScore}% AI Match</span>
+                  <span className={`${deviceType === 'mobile' ? 'text-xs' : 'text-xs'} font-medium`}>{hotel.aiScore}%</span>
                 </div>
 
                 {/* Hover Overlay */}
@@ -204,7 +243,7 @@ const FeaturedHotels: React.FC = () => {
                 <div className="space-y-4">
                   {/* Hotel Info */}
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors">
+                    <h3 className={`${deviceType === 'mobile' ? 'text-lg' : 'text-xl'} font-bold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors`}>
                       {hotel.name}
                     </h3>
                     <div className="flex items-center text-gray-600 space-x-1 mb-3">
@@ -214,7 +253,7 @@ const FeaturedHotels: React.FC = () => {
                     
                     {/* Badges */}
                     <div className="flex flex-wrap gap-1 mb-3">
-                      {hotel.badges.map((badge, idx) => (
+                      {hotel.badges.slice(0, deviceType === 'mobile' ? 1 : 2).map((badge, idx) => (
                         <span
                           key={idx}
                           className="bg-gradient-to-r from-primary-100 to-secondary-100 text-primary-700 px-2 py-1 rounded-md text-xs font-medium"
@@ -227,7 +266,7 @@ const FeaturedHotels: React.FC = () => {
 
                   {/* Amenities */}
                   <div className="flex flex-wrap gap-2">
-                    {hotel.amenities.slice(0, 4).map((amenity) => (
+                    {hotel.amenities.slice(0, deviceType === 'mobile' ? 3 : 4).map((amenity) => (
                       <div
                         key={amenity}
                         className="flex items-center space-x-1 bg-gray-100 hover:bg-primary-50 px-2 py-1 rounded-md text-xs text-gray-600 hover:text-primary-700 transition-colors"
@@ -253,14 +292,14 @@ const FeaturedHotels: React.FC = () => {
                       <div className="text-2xl font-bold text-primary-600">
                         ${hotel.price}
                       </div>
-                      <div className="text-sm text-gray-600">per night</div>
+                      <div className={`${deviceType === 'mobile' ? 'text-xs' : 'text-sm'} text-gray-600`}>per night</div>
                     </div>
                   </div>
 
                   {/* Action Button */}
                   <Link
                     to={`/hotels/${hotel.id}`}
-                    className="w-full bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-700 hover:to-secondary-700 text-white py-3 rounded-xl font-semibold transition-all duration-300 text-center block transform hover:scale-105 shadow-lg hover:shadow-xl"
+                    className={`w-full bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-700 hover:to-secondary-700 text-white ${deviceType === 'mobile' ? 'py-2.5' : 'py-3'} rounded-xl font-semibold transition-all duration-300 text-center block ${deviceType !== 'mobile' ? 'transform hover:scale-105' : ''} shadow-lg hover:shadow-xl`}
                   >
                     View Details
                   </Link>
@@ -274,7 +313,7 @@ const FeaturedHotels: React.FC = () => {
         <div className="text-center mt-12">
           <Link
             to="/hotels"
-            className="group bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-700 hover:to-secondary-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 inline-flex items-center space-x-3 shadow-lg hover:shadow-xl transform hover:scale-105"
+            className={`group bg-gradient-to-r from-primary-600 to-secondary-600 hover:from-primary-700 hover:to-secondary-700 text-white ${deviceType === 'mobile' ? 'px-6 py-3 text-base' : 'px-8 py-4 text-lg'} rounded-xl font-semibold transition-all duration-300 inline-flex items-center space-x-3 shadow-lg hover:shadow-xl ${deviceType !== 'mobile' ? 'transform hover:scale-105' : ''}`}
           >
             <span>Explore All Hotels</span>
             <Sparkles className="h-5 w-5 group-hover:rotate-12 transition-transform" />

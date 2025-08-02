@@ -3,7 +3,11 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Star, Play, Sparkles, TrendingUp, Users, MapPin } from 'lucide-react';
 import SmartSearch from '../AI/SmartSearch';
 
-const Hero: React.FC = () => {
+interface HeroProps {
+  deviceType: 'mobile' | 'tablet' | 'desktop';
+}
+
+const Hero: React.FC<HeroProps> = ({ deviceType }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
@@ -40,6 +44,41 @@ const Hero: React.FC = () => {
 
   const currentHero = heroSlides[currentSlide];
 
+  // Responsive configurations
+  const getResponsiveConfig = () => {
+    switch (deviceType) {
+      case 'mobile':
+        return {
+          titleSize: 'text-3xl md:text-4xl',
+          subtitleSize: 'text-lg',
+          padding: 'py-16',
+          gridCols: 'grid-cols-1',
+          showStats: false,
+          showFloatingCards: false
+        };
+      case 'tablet':
+        return {
+          titleSize: 'text-4xl md:text-5xl',
+          subtitleSize: 'text-xl',
+          padding: 'py-20',
+          gridCols: 'grid-cols-1 lg:grid-cols-2',
+          showStats: true,
+          showFloatingCards: true
+        };
+      default:
+        return {
+          titleSize: 'text-4xl md:text-6xl',
+          subtitleSize: 'text-xl md:text-2xl',
+          padding: 'py-24 lg:py-32',
+          gridCols: 'grid-cols-1 lg:grid-cols-2',
+          showStats: true,
+          showFloatingCards: true
+        };
+    }
+  };
+
+  const config = getResponsiveConfig();
+
   return (
     <section className={`relative ${currentHero.background} text-white overflow-hidden transition-all duration-1000`}>
       {/* Animated Background Elements */}
@@ -50,8 +89,8 @@ const Hero: React.FC = () => {
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-r from-white/5 to-transparent rounded-full blur-3xl animate-spin-slow"></div>
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div className={`relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ${config.padding}`}>
+        <div className={`${config.gridCols} gap-8 lg:gap-12 items-center`}>
           {/* Left Content */}
           <div className="space-y-8 animate-slide-up">
             {/* AI Badge */}
@@ -63,13 +102,13 @@ const Hero: React.FC = () => {
 
             {/* Main Heading */}
             <div className="space-y-4">
-              <h1 className="text-4xl md:text-6xl font-bold leading-tight">
+              <h1 className={`${config.titleSize} font-bold leading-tight`}>
                 {currentHero.title}
                 <span className="block bg-gradient-to-r from-accent-400 to-accent-500 bg-clip-text text-transparent animate-pulse">
                   {currentHero.highlight}
                 </span>
               </h1>
-              <p className="text-xl md:text-2xl text-primary-100 max-w-2xl leading-relaxed">
+              <p className={`${config.subtitleSize} text-primary-100 max-w-2xl leading-relaxed`}>
                 {currentHero.subtitle}
               </p>
             </div>
@@ -84,10 +123,10 @@ const Hero: React.FC = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className={`flex ${deviceType === 'mobile' ? 'flex-col' : 'flex-col sm:flex-row'} gap-4`}>
               <Link
                 to="/hotels"
-                className="group bg-accent-600 hover:bg-accent-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl"
+                className={`group bg-accent-600 hover:bg-accent-700 text-white px-6 md:px-8 py-3 md:py-4 rounded-xl font-semibold ${deviceType === 'mobile' ? 'text-base' : 'text-lg'} transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl`}
               >
                 <span>Explore Hotels</span>
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -95,7 +134,7 @@ const Hero: React.FC = () => {
               
               <button
                 onClick={() => setIsVideoPlaying(true)}
-                className="group border-2 border-white text-white hover:bg-white hover:text-primary-600 px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 flex items-center justify-center space-x-2"
+                className={`group border-2 border-white text-white hover:bg-white hover:text-primary-600 px-6 md:px-8 py-3 md:py-4 rounded-xl font-semibold ${deviceType === 'mobile' ? 'text-base' : 'text-lg'} transition-all duration-300 flex items-center justify-center space-x-2`}
               >
                 <Play className="h-5 w-5 group-hover:scale-110 transition-transform" />
                 <span>Watch Demo</span>
@@ -103,7 +142,8 @@ const Hero: React.FC = () => {
             </div>
 
             {/* Stats */}
-            <div className="flex items-center space-x-8 text-primary-100">
+            {config.showStats && (
+            <div className={`flex items-center ${deviceType === 'mobile' ? 'flex-col space-y-4' : 'space-x-4 lg:space-x-8'} text-primary-100`}>
               <div className="flex items-center space-x-2">
                 <div className="flex">
                   {[...Array(5)].map((_, i) => (
@@ -112,23 +152,25 @@ const Hero: React.FC = () => {
                 </div>
                 <span className="font-medium">{currentHero.stats.rating}/5 Rating</span>
               </div>
-              <div className="h-6 w-px bg-primary-400"></div>
+              {deviceType !== 'mobile' && <div className="h-6 w-px bg-primary-400"></div>}
               <div className="flex items-center space-x-2">
                 <Users className="h-5 w-5" />
                 <span className="font-bold text-xl">{currentHero.stats.travelers}</span>
                 <span>Happy Travelers</span>
               </div>
-              <div className="h-6 w-px bg-primary-400"></div>
+              {deviceType !== 'mobile' && <div className="h-6 w-px bg-primary-400"></div>}
               <div className="flex items-center space-x-2">
                 <MapPin className="h-5 w-5" />
                 <span className="font-bold text-xl">{currentHero.stats.hotels}</span>
                 <span>Hotels Worldwide</span>
               </div>
             </div>
+            )}
           </div>
 
           {/* Right Content - Interactive Elements */}
-          <div className="relative">
+          {config.showFloatingCards && (
+          <div className="relative mt-8 lg:mt-0">
             {/* Floating Cards */}
             <div className="relative z-10 space-y-6">
               {/* Trending Destinations Card */}
@@ -177,6 +219,7 @@ const Hero: React.FC = () => {
               <div className="w-full h-full bg-gradient-to-br from-white/5 to-transparent rounded-3xl transform rotate-6"></div>
             </div>
           </div>
+          )}
         </div>
 
         {/* Slide Indicators */}
