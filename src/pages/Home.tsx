@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Hero from '../components/Home/Hero';
 import SearchSection from '../components/Home/SearchSection';
@@ -7,6 +7,7 @@ import Features from '../components/Home/Features';
 import Testimonials from '../components/Home/Testimonials';
 import { fetchFeaturedHotels } from '../store/slices/hotelSlice';
 import { RootState, AppDispatch } from '../store/store';
+import useSocket from '../hooks/useSocket';
 
 const Home: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -14,10 +15,13 @@ const Home: React.FC = () => {
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [isLoaded, setIsLoaded] = useState(false);
   const [deviceType, setDeviceType] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
+  
+  // Initialize socket connection
+  const socket = useSocket();
 
-  // Memoized device detection for performance
-  const updateDeviceType = useMemo(() => {
-    return () => {
+  // Device detection
+  useEffect(() => {
+    const updateDeviceType = () => {
       const width = window.innerWidth;
       if (width < 768) {
         setDeviceType('mobile');
@@ -27,30 +31,17 @@ const Home: React.FC = () => {
         setDeviceType('desktop');
       }
     };
+    
+    updateDeviceType();
+    window.addEventListener('resize', updateDeviceType);
+    return () => window.removeEventListener('resize', updateDeviceType);
   }, []);
 
-  // Device detection with optimized event handling
   useEffect(() => {
-    updateDeviceType();
-    
-    let resizeTimer: NodeJS.Timeout;
-    const debouncedResize = () => {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(updateDeviceType, 150);
-    };
-    
-    window.addEventListener('resize', debouncedResize, { passive: true });
-    return () => {
-      window.removeEventListener('resize', debouncedResize);
-      clearTimeout(resizeTimer);
-    };
-  }, [updateDeviceType]);
-
-  // Optimized data loading
-  useEffect(() => {
+    // Fetch only essential data for home page
     const loadEssentialData = async () => {
       try {
-        // Only fetch featured hotels for home page
+        // Only fetch featured hotels (limit to 4 for performance)
         await dispatch(fetchFeaturedHotels());
         setIsLoaded(true);
       } catch (error) {
@@ -61,6 +52,13 @@ const Home: React.FC = () => {
 
     loadEssentialData();
   }, [dispatch]);
+
+  useEffect(() => {
+    // Track page visit only after component is loaded
+    if (socket && isAuthenticated && isLoaded) {
+      socket.trackUserActivity('visited_home_page');
+    }
+  }, [socket, isAuthenticated, isLoaded]);
 
   return (
     <div className="animate-fade-in">

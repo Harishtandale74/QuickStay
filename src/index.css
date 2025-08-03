@@ -8,8 +8,6 @@
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
     -ms-text-size-adjust: 100%;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
   }
   
   body {
@@ -17,29 +15,12 @@
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
-  }
-  
-  /* Improved focus styles for accessibility */
-  *:focus {
-    outline: 2px solid transparent;
-    outline-offset: 2px;
-  }
-  
-  /* Better button and interactive element styles */
-  button, a, input, select, textarea {
-    touch-action: manipulation;
   }
   
   /* Mobile-specific optimizations */
   @media (max-width: 767px) {
     body {
       font-size: 14px;
-    }
-    
-    /* Prevent zoom on input focus */
-    input, select, textarea {
-      font-size: 16px;
     }
   }
   
@@ -68,10 +49,6 @@
     animation: fadeIn 0.5s ease-in-out;
   }
   
-  .animate-slide-up {
-    animation: slideUp 0.6s ease-out;
-  }
-  
   /* Mobile-friendly touch targets */
   .touch-target {
     min-height: 44px;
@@ -89,28 +66,6 @@
   
   .text-responsive-lg {
     @apply text-lg md:text-xl;
-  }
-  
-  /* Line clamping for text overflow */
-  .line-clamp-1 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
-  }
-  
-  .line-clamp-2 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-  }
-  
-  .line-clamp-3 {
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
   }
 }
 
@@ -142,20 +97,12 @@
     .mobile-text {
       @apply text-sm;
     }
-    
-    .mobile-hidden {
-      @apply hidden;
-    }
   }
   
   /* Tablet-specific utilities */
   @media (min-width: 768px) and (max-width: 1023px) {
     .tablet-padding {
       @apply px-6 py-4;
-    }
-    
-    .tablet-hidden {
-      @apply hidden;
     }
   }
   
@@ -164,96 +111,5 @@
     .desktop-padding {
       @apply px-8 py-6;
     }
-    
-    .desktop-hidden {
-      @apply hidden;
-    }
-  }
-  
-  /* Performance optimizations */
-  .gpu-accelerated {
-    transform: translateZ(0);
-    will-change: transform;
-  }
-  
-  /* Smooth scrolling for better UX */
-  .smooth-scroll {
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-  }
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-@keyframes scaleIn {
-  from {
-    transform: scale(0.95);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-/* Loading states */
-.loading-skeleton {
-  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-  background-size: 200% 100%;
-  animation: loading 1.5s infinite;
-}
-
-@keyframes loading {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-/* Print styles */
-@media print {
-  .no-print {
-    display: none !important;
-  }
-}
-
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  .bg-gray-50 {
-    @apply bg-white;
-  }
-  
-  .text-gray-600 {
-    @apply text-gray-900;
-  }
-}
-
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
   }
 }
