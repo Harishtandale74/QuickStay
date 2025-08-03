@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { MapPin, Navigation, Star, Phone, Clock, Loader, AlertTriangle, Maximize2, Minimize2, Crosshair, Layers, ZoomIn, ZoomOut } from 'lucide-react';
 import { NAGPUR_AREAS, NAGPUR_COORDINATES, POPULAR_HOTEL_AREAS } from '../../data/nagpurData';
+import { locationService } from '../../utils/locationService';
 import toast from 'react-hot-toast';
 
 interface Hotel {
@@ -59,63 +60,60 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [deviceType, setDeviceType] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
 
   const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyD59LOdOLD5wniYAvrStoek-4eqLsFra8I';
 
-  // Responsive breakpoints
-  const getResponsiveZoom = useCallback(() => {
-    const width = window.innerWidth;
-    if (width < 640) return 11; // Mobile
-    if (width < 1024) return 12; // Tablet
-    return 13; // Desktop
+  // Device detection
+  useEffect(() => {
+    const updateDeviceType = () => {
+      const width = window.innerWidth;
+      if (width < 768) {
+        setDeviceType('mobile');
+      } else if (width < 1024) {
+        setDeviceType('tablet');
+      } else {
+        setDeviceType('desktop');
+      }
+    };
+    
+    updateDeviceType();
+    window.addEventListener('resize', updateDeviceType, { passive: true });
+    return () => window.removeEventListener('resize', updateDeviceType);
   }, []);
 
-  // Get user's current location with high accuracy
-  const getCurrentLocation = useCallback(async (): Promise<UserLocation> => {
-    return new Promise((resolve, reject) => {
-      if (!navigator.geolocation) {
-        reject(new Error('Geolocation is not supported by this browser'));
-        return;
-      }
+  // Responsive zoom levels
+  const getResponsiveZoom = useCallback(() => {
+    switch (deviceType) {
+      case 'mobile': return 11;
+      case 'tablet': return 12;
+      default: return 13;
+    }
+  }, [deviceType]);
 
-      const options: PositionOptions = {
+  // Get user's current location with enhanced error handling
+  const getCurrentLocation = useCallback(async (): Promise<UserLocation> => {
+    try {
+      const location = await locationService.getCurrentPosition({
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 300000 // 5 minutes cache
+        maximumAge: 300000
+      });
+      
+      return {
+        latitude: location.latitude,
+        longitude: location.longitude,
+        accuracy: location.accuracy
       };
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const location: UserLocation = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy
-          };
-          resolve(location);
-        },
-        (error) => {
-          let errorMessage = 'Unable to get your location';
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              errorMessage = 'Location access denied by user';
-              break;
-            case error.POSITION_UNAVAILABLE:
-              errorMessage = 'Location information unavailable';
-              break;
-            case error.TIMEOUT:
-              errorMessage = 'Location request timed out';
-              break;
-          }
-          reject(new Error(errorMessage));
-        },
-        options
-      );
-    });
+    } catch (error) {
+      throw error;
+    }
   }, []);
 
-  // Load Google Maps API
+  // Load Google Maps API with proper error handling
   useEffect(() => {
     if (window.google && window.google.maps) {
+      setMapLoaded(true);
       initializeMap();
       return;
     }
@@ -168,10 +166,10 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
           }
         ],
         mapTypeControl: false,
-        streetViewControl: window.innerWidth > 768,
+        streetViewControl: deviceType !== 'mobile',
         fullscreenControl: false,
         zoomControl: false,
-        gestureHandling: 'cooperative',
+        gestureHandling: deviceType === 'mobile' ? 'greedy' : 'cooperative',
         restriction: {
           latLngBounds: {
             north: NAGPUR_COORDINATES.bounds.north,
@@ -198,22 +196,12 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
         }
       });
 
-      // Handle responsive zoom on window resize
-      const handleResize = () => {
-        newMap.setZoom(getResponsiveZoom());
-      };
-      window.addEventListener('resize', handleResize);
-
-      return () => {
-        window.removeEventListener('resize', handleResize);
-      };
-
     } catch (error) {
       console.error('Error initializing map:', error);
       setError('Failed to initialize map. Please refresh the page.');
       setIsLoading(false);
     }
-  }, [mapType, mapLoaded, getResponsiveZoom, onAreaSelect]);
+  }, [mapType, mapLoaded, getResponsiveZoom, onAreaSelect, deviceType]);
 
   // Update map type
   useEffect(() => {
@@ -232,8 +220,8 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
 
     const newMarkers: any[] = [];
 
-    // Add hotel markers with responsive sizing
-    const markerSize = window.innerWidth < 640 ? 30 : 40;
+    // Responsive marker sizing
+    const markerSize = deviceType === 'mobile' ? 30 : deviceType === 'tablet' ? 35 : 40;
     
     hotels.forEach((hotel) => {
       const marker = new window.google.maps.Marker({
@@ -256,38 +244,38 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
         animation: window.google.maps.Animation.DROP
       });
 
-      // Create responsive info window
+      // Responsive info window
       const infoWindow = new window.google.maps.InfoWindow({
         content: `
-          <div style="padding: 12px; max-width: ${window.innerWidth < 640 ? '200px' : '280px'}; font-family: 'Inter', sans-serif;">
-            <img src="${hotel.image}" alt="${hotel.name}" style="width: 100%; height: ${window.innerWidth < 640 ? '100px' : '140px'}; object-fit: cover; border-radius: 8px; margin-bottom: 8px;">
-            <h3 style="margin: 0 0 8px 0; font-size: ${window.innerWidth < 640 ? '14px' : '16px'}; font-weight: bold; color: #1f2937;">${hotel.name}</h3>
-            <p style="margin: 0 0 8px 0; color: #6b7280; font-size: ${window.innerWidth < 640 ? '12px' : '14px'};">${hotel.location.area}, Nagpur</p>
+          <div style="padding: 12px; max-width: ${deviceType === 'mobile' ? '200px' : '280px'}; font-family: 'Inter', sans-serif;">
+            <img src="${hotel.image}" alt="${hotel.name}" style="width: 100%; height: ${deviceType === 'mobile' ? '100px' : '140px'}; object-fit: cover; border-radius: 8px; margin-bottom: 8px;">
+            <h3 style="margin: 0 0 8px 0; font-size: ${deviceType === 'mobile' ? '14px' : '16px'}; font-weight: bold; color: #1f2937;">${hotel.name}</h3>
+            <p style="margin: 0 0 8px 0; color: #6b7280; font-size: ${deviceType === 'mobile' ? '12px' : '14px'};">${hotel.location.area}, Nagpur</p>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <div style="display: flex; align-items: center; gap: 4px;">
                 <span style="color: #fbbf24;">⭐</span>
-                <span style="font-weight: 600; color: #1f2937; font-size: ${window.innerWidth < 640 ? '12px' : '14px'};">${hotel.rating}</span>
+                <span style="font-weight: 600; color: #1f2937; font-size: ${deviceType === 'mobile' ? '12px' : '14px'};">${hotel.rating}</span>
               </div>
-              <div style="font-weight: bold; color: #f97316; font-size: ${window.innerWidth < 640 ? '14px' : '16px'};">₹${hotel.price}/night</div>
+              <div style="font-weight: bold; color: #f97316; font-size: ${deviceType === 'mobile' ? '14px' : '16px'};">₹${hotel.price}/night</div>
             </div>
             <button onclick="window.selectHotel('${hotel.id}')" style="
               width: 100%; 
               margin-top: 8px; 
-              padding: ${window.innerWidth < 640 ? '6px 12px' : '8px 16px'}; 
+              padding: ${deviceType === 'mobile' ? '6px 12px' : '8px 16px'}; 
               background: linear-gradient(to right, #f97316, #dc2626); 
               color: white; 
               border: none; 
               border-radius: 6px; 
               font-weight: 600; 
               cursor: pointer;
-              font-size: ${window.innerWidth < 640 ? '12px' : '14px'};
+              font-size: ${deviceType === 'mobile' ? '12px' : '14px'};
               transition: all 0.2s;
             " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
               View Details
             </button>
           </div>
         `,
-        maxWidth: window.innerWidth < 640 ? 220 : 300
+        maxWidth: deviceType === 'mobile' ? 220 : 300
       });
 
       marker.addListener('click', () => {
@@ -299,10 +287,10 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
       newMarkers.push(marker);
     });
 
-    // Add area markers with responsive sizing
-    const areaMarkerSize = window.innerWidth < 640 ? 40 : 50;
+    // Add area markers
+    const areaMarkerSize = deviceType === 'mobile' ? 40 : deviceType === 'tablet' ? 45 : 50;
     
-    POPULAR_HOTEL_AREAS.forEach((area, index) => {
+    POPULAR_HOTEL_AREAS.forEach((area) => {
       const hotelsInArea = hotels.filter(h => h.location.area === area.name);
       if (hotelsInArea.length === 0) return;
 
@@ -317,8 +305,8 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
           url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
             <svg width="${areaMarkerSize}" height="${areaMarkerSize}" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg">
               <circle cx="25" cy="25" r="22" fill="${selectedArea === area.name ? '#dc2626' : '#3b82f6'}" stroke="#fff" stroke-width="3"/>
-              <text x="25" y="20" text-anchor="middle" fill="white" font-size="${window.innerWidth < 640 ? '8' : '10'}" font-weight="bold">${hotelsInArea.length}</text>
-              <text x="25" y="32" text-anchor="middle" fill="white" font-size="${window.innerWidth < 640 ? '6' : '8'}">hotels</text>
+              <text x="25" y="20" text-anchor="middle" fill="white" font-size="${deviceType === 'mobile' ? '8' : '10'}" font-weight="bold">${hotelsInArea.length}</text>
+              <text x="25" y="32" text-anchor="middle" fill="white" font-size="${deviceType === 'mobile' ? '6' : '8'}">hotels</text>
             </svg>
           `),
           scaledSize: new window.google.maps.Size(areaMarkerSize, areaMarkerSize),
@@ -331,7 +319,7 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
           onAreaSelect(area.name);
         }
         map.setCenter({ lat: areaLat, lng: areaLng });
-        map.setZoom(window.innerWidth < 640 ? 13 : 14);
+        map.setZoom(deviceType === 'mobile' ? 13 : 14);
       });
 
       newMarkers.push(areaMarker);
@@ -347,7 +335,7 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
       }
     };
 
-  }, [map, hotels, selectedArea, onAreaSelect, onHotelSelect]);
+  }, [map, hotels, selectedArea, onAreaSelect, onHotelSelect, deviceType]);
 
   // Get user location with proper error handling
   const handleGetLocation = useCallback(async () => {
@@ -409,18 +397,6 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
     }
   }, [map, getCurrentLocation]);
 
-  // Auto-get location on map load (with permission)
-  useEffect(() => {
-    if (map && !userLocation) {
-      // Try to get location automatically but don't show errors
-      getCurrentLocation()
-        .then(setUserLocation)
-        .catch(() => {
-          // Silently fail for auto-location
-        });
-    }
-  }, [map, userLocation, getCurrentLocation]);
-
   const findNearestArea = useCallback((lat: number, lng: number) => {
     let nearestArea = null;
     let minDistance = Infinity;
@@ -440,11 +416,11 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
     return nearestArea;
   }, []);
 
-  const toggleFullscreen = () => {
+  const toggleFullscreen = useCallback(() => {
     setIsFullscreen(!isFullscreen);
-  };
+  }, [isFullscreen]);
 
-  const centerOnNagpur = () => {
+  const centerOnNagpur = useCallback(() => {
     if (map) {
       map.setCenter({ 
         lat: NAGPUR_COORDINATES.center.latitude, 
@@ -452,19 +428,29 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
       });
       map.setZoom(getResponsiveZoom());
     }
-  };
+  }, [map, getResponsiveZoom]);
 
-  const zoomIn = () => {
+  const zoomIn = useCallback(() => {
     if (map) {
       map.setZoom(map.getZoom() + 1);
     }
-  };
+  }, [map]);
 
-  const zoomOut = () => {
+  const zoomOut = useCallback(() => {
     if (map) {
       map.setZoom(map.getZoom() - 1);
     }
-  };
+  }, [map]);
+
+  // Memoized responsive configuration
+  const responsiveConfig = useMemo(() => ({
+    headerPadding: deviceType === 'mobile' ? 'p-4' : 'p-4 md:p-6',
+    titleSize: deviceType === 'mobile' ? 'text-lg' : 'text-lg md:text-xl',
+    subtitleSize: deviceType === 'mobile' ? 'text-sm' : 'text-sm md:text-base',
+    controlPadding: deviceType === 'mobile' ? 'px-2 md:px-3 py-1.5 md:py-2' : 'px-3 py-2',
+    controlText: deviceType === 'mobile' ? 'text-xs md:text-sm' : 'text-sm',
+    mapHeight: isFullscreen ? 'h-full' : deviceType === 'mobile' ? 'h-80' : height
+  }), [deviceType, isFullscreen, height]);
 
   if (error) {
     return (
@@ -475,7 +461,7 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500"
           >
             Retry
           </button>
@@ -487,11 +473,11 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
   return (
     <div className={`bg-white rounded-2xl shadow-lg overflow-hidden ${isFullscreen ? 'fixed inset-4 z-50' : ''}`}>
       {/* Map Header - Responsive */}
-      <div className="bg-gradient-to-r from-orange-500 to-red-600 text-white p-4 md:p-6">
+      <div className={`bg-gradient-to-r from-orange-500 to-red-600 text-white ${responsiveConfig.headerPadding}`}>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg md:text-xl font-semibold mb-1 md:mb-2">Interactive Nagpur Map</h3>
-            <p className="text-orange-100 text-sm md:text-base">Explore hotels across different areas of Nagpur</p>
+            <h3 className={`${responsiveConfig.titleSize} font-semibold mb-1 md:mb-2`}>Interactive Nagpur Map</h3>
+            <p className={`text-orange-100 ${responsiveConfig.subtitleSize}`}>Explore hotels across different areas of Nagpur</p>
           </div>
           <div className="flex items-center space-x-2 md:space-x-3">
             <div className="text-right">
@@ -501,7 +487,8 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
             {showControls && (
               <button
                 onClick={toggleFullscreen}
-                className="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors"
+                className="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+                aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
               >
                 {isFullscreen ? <Minimize2 className="h-4 w-4 md:h-5 md:w-5" /> : <Maximize2 className="h-4 w-4 md:h-5 md:w-5" />}
               </button>
@@ -518,7 +505,8 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
               <select
                 value={mapType}
                 onChange={(e) => setMapType(e.target.value as any)}
-                className="px-2 md:px-3 py-1.5 md:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-xs md:text-sm"
+                className={`${responsiveConfig.controlPadding} border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${responsiveConfig.controlText}`}
+                aria-label="Map type"
               >
                 <option value="roadmap">Road Map</option>
                 <option value="satellite">Satellite</option>
@@ -528,7 +516,8 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
               
               <button
                 onClick={centerOnNagpur}
-                className="flex items-center space-x-1 md:space-x-2 px-2 md:px-3 py-1.5 md:py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors text-xs md:text-sm"
+                className={`flex items-center space-x-1 md:space-x-2 ${responsiveConfig.controlPadding} bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors ${responsiveConfig.controlText} focus:outline-none focus:ring-2 focus:ring-orange-500`}
+                aria-label="Center map on Nagpur"
               >
                 <MapPin className="h-3 w-3 md:h-4 md:w-4" />
                 <span className="hidden sm:inline">Center on Nagpur</span>
@@ -538,7 +527,8 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
               <button
                 onClick={handleGetLocation}
                 disabled={isLocating}
-                className="flex items-center space-x-1 md:space-x-2 px-2 md:px-3 py-1.5 md:py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors disabled:opacity-50 text-xs md:text-sm"
+                className={`flex items-center space-x-1 md:space-x-2 ${responsiveConfig.controlPadding} bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors disabled:opacity-50 ${responsiveConfig.controlText} focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                aria-label="Get my location"
               >
                 {isLocating ? (
                   <Loader className="h-3 w-3 md:h-4 md:w-4 animate-spin" />
@@ -550,7 +540,7 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
               </button>
             </div>
             
-            <div className="text-xs md:text-sm text-gray-600">
+            <div className={`${responsiveConfig.controlText} text-gray-600`}>
               <span className="hidden md:inline">Click on markers for details • Drag to explore</span>
               <span className="md:hidden">Tap markers for details</span>
             </div>
@@ -577,8 +567,8 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
         
         <div 
           ref={mapRef} 
-          className={`w-full ${isFullscreen ? 'h-full' : height} bg-gray-100`}
-          style={{ minHeight: isFullscreen ? '100%' : window.innerWidth < 640 ? '300px' : '400px' }}
+          className={`w-full ${responsiveConfig.mapHeight} bg-gray-100`}
+          style={{ minHeight: isFullscreen ? '100%' : deviceType === 'mobile' ? '300px' : '400px' }}
         />
 
         {/* Custom Map Controls - Mobile Optimized */}
@@ -586,19 +576,22 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
           <div className="absolute top-4 right-4 flex flex-col space-y-2">
             <button
               onClick={zoomIn}
-              className="p-2 bg-white shadow-lg rounded-lg hover:bg-gray-50 transition-colors"
+              className="p-2 bg-white shadow-lg rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500"
+              aria-label="Zoom in"
             >
               <ZoomIn className="h-4 w-4 text-gray-700" />
             </button>
             <button
               onClick={zoomOut}
-              className="p-2 bg-white shadow-lg rounded-lg hover:bg-gray-50 transition-colors"
+              className="p-2 bg-white shadow-lg rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500"
+              aria-label="Zoom out"
             >
               <ZoomOut className="h-4 w-4 text-gray-700" />
             </button>
             <button
               onClick={() => setMapType(mapType === 'roadmap' ? 'satellite' : 'roadmap')}
-              className="p-2 bg-white shadow-lg rounded-lg hover:bg-gray-50 transition-colors"
+              className="p-2 bg-white shadow-lg rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500"
+              aria-label="Toggle map type"
             >
               <Layers className="h-4 w-4 text-gray-700" />
             </button>
@@ -618,11 +611,12 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
                 <button
                   key={area.name}
                   onClick={() => onAreaSelect?.(area.name)}
-                  className={`text-left p-3 md:p-4 rounded-xl border-2 transition-all duration-300 ${
+                  className={`text-left p-3 md:p-4 rounded-xl border-2 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-orange-500 ${
                     isSelected
                       ? 'border-orange-500 bg-orange-50 shadow-lg'
                       : 'border-gray-200 hover:border-orange-300 hover:bg-gray-50'
                   }`}
+                  aria-label={`Select ${area.name} area`}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-semibold text-gray-900 text-sm md:text-base">{area.name}</h4>
@@ -640,7 +634,7 @@ const NagpurMap: React.FC<NagpurMapProps> = ({
                       <span className="font-semibold text-orange-600">₹{area.avgPrice}</span>
                     </div>
                     <div className="flex flex-wrap gap-1">
-                      {area.highlights.slice(0, window.innerWidth < 640 ? 1 : 2).map((highlight) => (
+                      {area.highlights.slice(0, deviceType === 'mobile' ? 1 : 2).map((highlight) => (
                         <span
                           key={highlight}
                           className="bg-orange-100 text-orange-700 px-1.5 md:px-2 py-0.5 md:py-1 rounded text-xs font-medium"
