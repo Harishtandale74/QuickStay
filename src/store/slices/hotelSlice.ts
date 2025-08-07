@@ -2,29 +2,6 @@ import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { nagpurAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 
-// Helper function for deep comparison of filters
-const areFiltersEqual = (filters1: HotelFilters, filters2: HotelFilters): boolean => {
-  const keys1 = Object.keys(filters1);
-  const keys2 = Object.keys(filters2);
-  
-  if (keys1.length !== keys2.length) return false;
-  
-  for (const key of keys1) {
-    const val1 = filters1[key as keyof HotelFilters];
-    const val2 = filters2[key as keyof HotelFilters];
-    
-    if (Array.isArray(val1) && Array.isArray(val2)) {
-      if (val1.length !== val2.length || !val1.every((item, index) => item === val2[index])) {
-        return false;
-      }
-    } else if (val1 !== val2) {
-      return false;
-    }
-  }
-  
-  return true;
-};
-
 interface Hotel {
   _id: string;
   name: string;
@@ -243,11 +220,7 @@ const hotelSlice = createSlice({
   initialState,
   reducers: {
     setFilters: (state, action: PayloadAction<HotelFilters>) => {
-      const newFilters = { ...state.filters, ...action.payload };
-      // Only update if filters are actually different
-      if (!areFiltersEqual(state.filters, newFilters)) {
-        state.filters = newFilters;
-      }
+      state.filters = { ...state.filters, ...action.payload };
     },
     clearFilters: (state) => {
       state.filters = {};
