@@ -14,28 +14,9 @@ const Home: React.FC = () => {
   const { featuredHotels, loading } = useSelector((state: RootState) => state.hotels);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const [isLoaded, setIsLoaded] = useState(false);
-  const [deviceType, setDeviceType] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
   
   // Initialize socket connection
   const socket = useSocket();
-
-  // Device detection
-  useEffect(() => {
-    const updateDeviceType = () => {
-      const width = window.innerWidth;
-      if (width < 768) {
-        setDeviceType('mobile');
-      } else if (width < 1024) {
-        setDeviceType('tablet');
-      } else {
-        setDeviceType('desktop');
-      }
-    };
-    
-    updateDeviceType();
-    window.addEventListener('resize', updateDeviceType);
-    return () => window.removeEventListener('resize', updateDeviceType);
-  }, []);
 
   useEffect(() => {
     // Fetch only essential data for home page
@@ -63,19 +44,19 @@ const Home: React.FC = () => {
   return (
     <div className="animate-fade-in">
       {/* Hero Section - Always show immediately */}
-      <Hero deviceType={deviceType} />
+      <Hero />
       
       {/* Search Section - Critical for user interaction */}
-      <SearchSection deviceType={deviceType} />
+      <SearchSection />
       
       {/* Featured Hotels - Load with skeleton if needed */}
-      <FeaturedHotels deviceType={deviceType} />
+      <FeaturedHotels />
       
       {/* Features Section - Static content, loads fast */}
-      <Features deviceType={deviceType} />
+      <Features />
       
       {/* Testimonials - Static content, loads fast */}
-      <Testimonials deviceType={deviceType} />
+      <Testimonials />
     </div>
   );
 };

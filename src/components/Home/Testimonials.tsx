@@ -1,11 +1,7 @@
 import React from 'react';
 import { Star, Quote } from 'lucide-react';
 
-interface TestimonialsProps {
-  deviceType: 'mobile' | 'tablet' | 'desktop';
-}
-
-const Testimonials: React.FC<TestimonialsProps> = ({ deviceType }) => {
+const Testimonials: React.FC = () => {
   const testimonials = [
     {
       id: 1,
@@ -33,56 +29,23 @@ const Testimonials: React.FC<TestimonialsProps> = ({ deviceType }) => {
     },
   ];
 
-  // Responsive configurations
-  const getResponsiveConfig = () => {
-    switch (deviceType) {
-      case 'mobile':
-        return {
-          padding: 'py-12',
-          titleSize: 'text-2xl md:text-3xl',
-          subtitleSize: 'text-lg',
-          gridCols: 'grid-cols-1',
-          maxTestimonials: 2
-        };
-      case 'tablet':
-        return {
-          padding: 'py-14',
-          titleSize: 'text-3xl',
-          subtitleSize: 'text-xl',
-          gridCols: 'grid-cols-1 md:grid-cols-2',
-          maxTestimonials: 2
-        };
-      default:
-        return {
-          padding: 'py-16',
-          titleSize: 'text-3xl md:text-4xl',
-          subtitleSize: 'text-xl',
-          gridCols: 'grid-cols-1 md:grid-cols-3',
-          maxTestimonials: 3
-        };
-    }
-  };
-
-  const config = getResponsiveConfig();
-  const displayTestimonials = testimonials.slice(0, config.maxTestimonials);
-
   return (
-    <section className={`${config.padding} bg-gradient-to-br from-primary-50 to-secondary-50`}>
+    <section className="py-16 bg-gradient-to-br from-primary-50 to-secondary-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12 space-y-4">
-          <h2 className={`${config.titleSize} font-bold text-gray-900`}>
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
             What Our Travelers Say
           </h2>
-          <p className={`${config.subtitleSize} text-gray-600 max-w-2xl mx-auto`}>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Real experiences from real travelers who trust QuickStay
           </p>
         </div>
 
-        <div className={`${config.gridCols} gap-6 md:gap-8`}>
-          {displayTestimonials.map((testimonial, index) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {testimonials.map((testimonial, index) => (
             <div
               key={testimonial.id}
-              className={`bg-white rounded-2xl ${deviceType === 'mobile' ? 'p-6' : 'p-8'} shadow-lg hover:shadow-xl transition-all duration-300 animate-fade-in`}
+              className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 animate-fade-in"
               style={{ animationDelay: `${index * 150}ms` }}
             >
               <div className="flex items-center mb-6">
@@ -95,7 +58,7 @@ const Testimonials: React.FC<TestimonialsProps> = ({ deviceType }) => {
                 ))}
               </div>
 
-              <p className={`text-gray-700 mb-6 leading-relaxed ${deviceType === 'mobile' ? 'text-sm' : ''}`}>
+              <p className="text-gray-700 mb-6 leading-relaxed">
                 "{testimonial.comment}"
               </p>
 
@@ -103,13 +66,13 @@ const Testimonials: React.FC<TestimonialsProps> = ({ deviceType }) => {
                 <img
                   src={testimonial.avatar}
                   alt={testimonial.name}
-                  className={`${deviceType === 'mobile' ? 'w-10 h-10' : 'w-12 h-12'} rounded-full object-cover mr-4`}
+                  className="w-12 h-12 rounded-full object-cover mr-4"
                 />
                 <div>
-                  <h4 className={`font-semibold text-gray-900 ${deviceType === 'mobile' ? 'text-sm' : ''}`}>
+                  <h4 className="font-semibold text-gray-900">
                     {testimonial.name}
                   </h4>
-                  <p className={`${deviceType === 'mobile' ? 'text-xs' : 'text-sm'} text-gray-600`}>
+                  <p className="text-sm text-gray-600">
                     {testimonial.role}
                   </p>
                 </div>
