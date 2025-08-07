@@ -2,29 +2,6 @@ import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { nagpurAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 
-// Helper function for deep comparison of filters
-const areFiltersEqual = (filters1: HotelFilters, filters2: HotelFilters): boolean => {
-  const keys1 = Object.keys(filters1);
-  const keys2 = Object.keys(filters2);
-  
-  if (keys1.length !== keys2.length) return false;
-  
-  for (const key of keys1) {
-    const val1 = filters1[key as keyof HotelFilters];
-    const val2 = filters2[key as keyof HotelFilters];
-    
-    if (Array.isArray(val1) && Array.isArray(val2)) {
-      if (val1.length !== val2.length || !val1.every((item, index) => item === val2[index])) {
-        return false;
-      }
-    } else if (val1 !== val2) {
-      return false;
-    }
-  }
-  
-  return true;
-};
-
 interface Hotel {
   _id: string;
   name: string;
@@ -99,6 +76,7 @@ interface Hotel {
 }
 
 interface HotelFilters {
+  search?: string;
   area?: string[];
   minPrice?: number;
   maxPrice?: number;
@@ -155,7 +133,7 @@ const initialState: HotelState = {
   },
 };
 
-// Async thunks
+// Async thunks with proper error handling
 export const fetchHotels = createAsyncThunk(
   'hotels/fetchHotels',
   async (params: HotelFilters & { page?: number; limit?: number; sortBy?: string }, { rejectWithValue }) => {
@@ -163,7 +141,7 @@ export const fetchHotels = createAsyncThunk(
       const response = await nagpurAPI.getHotels(params);
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to fetch hotels';
+      const message = error.response?.data?.message || error.message || 'Failed to fetch hotels';
       return rejectWithValue(message);
     }
   }
@@ -176,7 +154,7 @@ export const fetchFeaturedHotels = createAsyncThunk(
       const response = await nagpurAPI.getFeaturedHotels();
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to fetch featured hotels';
+      const message = error.response?.data?.message || error.message || 'Failed to fetch featured hotels';
       return rejectWithValue(message);
     }
   }
@@ -189,50 +167,7 @@ export const fetchHotelById = createAsyncThunk(
       const response = await nagpurAPI.getHotelById(id);
       return response.data;
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to fetch hotel details';
-      return rejectWithValue(message);
-    }
-  }
-);
-
-export const fetchHotelsByArea = createAsyncThunk(
-  'hotels/fetchByArea',
-  async (area: string, { rejectWithValue }) => {
-    try {
-      const response = await nagpurAPI.getHotelsByArea(area);
-      return response.data;
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to fetch hotels by area';
-      return rejectWithValue(message);
-    }
-  }
-);
-
-export const createHotel = createAsyncThunk(
-  'hotels/create',
-  async (hotelData: any, { rejectWithValue }) => {
-    try {
-      const response = await nagpurAPI.createHotel(hotelData);
-      toast.success('Hotel submitted for approval!');
-      return response.data;
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to create hotel';
-      toast.error(message);
-      return rejectWithValue(message);
-    }
-  }
-);
-
-export const addHotelReview = createAsyncThunk(
-  'hotels/addReview',
-  async ({ hotelId, reviewData }: { hotelId: string; reviewData: { rating: number; comment: string } }, { rejectWithValue }) => {
-    try {
-      const response = await nagpurAPI.addReview(hotelId, reviewData);
-      toast.success('Review added successfully!');
-      return { hotelId, review: reviewData };
-    } catch (error: any) {
-      const message = error.response?.data?.message || 'Failed to add review';
-      toast.error(message);
+      const message = error.response?.data?.message || error.message || 'Failed to fetch hotel details';
       return rejectWithValue(message);
     }
   }
@@ -243,9 +178,11 @@ const hotelSlice = createSlice({
   initialState,
   reducers: {
     setFilters: (state, action: PayloadAction<HotelFilters>) => {
-      const newFilters = { ...state.filters, ...action.payload };
       // Only update if filters are actually different
-      if (!areFiltersEqual(state.filters, newFilters)) {
+      const newFilters = { ...state.filters, ...action.payload };
+      const filtersChanged = JSON.stringify(state.filters) !== JSON.stringify(newFilters);
+      
+      if (filtersChanged) {
         state.filters = newFilters;
       }
     },
@@ -258,6 +195,9 @@ const hotelSlice = createSlice({
     clearSelectedHotel: (state) => {
       state.selectedHotel = null;
     },
+    setLoading: (state, action: PayloadAction<boolean>) => {
+      state.loading = action.payload;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -268,25 +208,28 @@ const hotelSlice = createSlice({
       })
       .addCase(fetchHotels.fulfilled, (state, action) => {
         state.loading = false;
-        state.hotels = action.payload.hotels;
-        state.pagination = action.payload.pagination;
-        state.availableFilters = action.payload.filters;
+        state.hotels = action.payload.hotels || [];
+        state.pagination = action.payload.pagination || initialState.pagination;
+        state.availableFilters = action.payload.filters || initialState.availableFilters;
       })
       .addCase(fetchHotels.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+        state.hotels = [];
       })
       // Fetch Featured Hotels
       .addCase(fetchFeaturedHotels.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(fetchFeaturedHotels.fulfilled, (state, action) => {
         state.loading = false;
-        state.featuredHotels = action.payload;
+        state.featuredHotels = Array.isArray(action.payload) ? action.payload : [];
       })
       .addCase(fetchFeaturedHotels.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
+        state.featuredHotels = [];
       })
       // Fetch Hotel by ID
       .addCase(fetchHotelById.pending, (state) => {
@@ -300,21 +243,10 @@ const hotelSlice = createSlice({
       .addCase(fetchHotelById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-      })
-      // Create Hotel
-      .addCase(createHotel.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(createHotel.fulfilled, (state, action) => {
-        state.loading = false;
-      })
-      .addCase(createHotel.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
+        state.selectedHotel = null;
       });
   },
 });
 
-export const { setFilters, clearFilters, clearError, clearSelectedHotel } = hotelSlice.actions;
+export const { setFilters, clearFilters, clearError, clearSelectedHotel, setLoading } = hotelSlice.actions;
 export default hotelSlice.reducer;

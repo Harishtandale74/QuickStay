@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Search, Filter, MapPin, Star, SlidersHorizontal, Grid, List } from 'lucide-react';
@@ -7,8 +7,6 @@ import FilterSidebar from '../components/Hotels/FilterSidebar';
 import NagpurMap from '../components/Nagpur/NagpurMap';
 import { fetchHotels, setFilters, clearFilters } from '../store/slices/hotelSlice';
 import { RootState, AppDispatch } from '../store/store';
-import { NAGPUR_AREAS } from '../data/nagpurData';
-import useSocket from '../hooks/useSocket';
 
 const Hotels: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -16,138 +14,104 @@ const Hotels: React.FC = () => {
   const [showMap, setShowMap] = useState(false);
   const [sortBy, setSortBy] = useState('recommended');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [isInitialized, setIsInitialized] = useState(false);
   
   const dispatch = useDispatch<AppDispatch>();
-  const { hotels, loading, error, filters, pagination, availableFilters } = useSelector((state: RootState) => state.hotels);
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const socket = useSocket();
+  const { hotels, loading, error, filters, pagination } = useSelector((state: RootState) => state.hotels);
 
   // Memoize search params to prevent unnecessary re-renders
-  const searchQuery = searchParams.get('q') || '';
-  const checkIn = searchParams.get('checkin') || '';
-  const checkOut = searchParams.get('checkout') || '';
-  const guests = parseInt(searchParams.get('guests') || '2');
-  const area = searchParams.get('area') || '';
+  const searchQuery = useMemo(() => searchParams.get('q') || '', [searchParams]);
+  const checkIn = useMemo(() => searchParams.get('checkin') || '', [searchParams]);
+  const checkOut = useMemo(() => searchParams.get('checkout') || '', [searchParams]);
+  const guests = useMemo(() => parseInt(searchParams.get('guests') || '2'), [searchParams]);
+  const area = useMemo(() => searchParams.get('area') || '', [searchParams]);
 
+  // Memoize initial filters to prevent recreation
+  const initialFilters = useMemo(() => ({
+    ...(searchQuery && { search: searchQuery }),
+    ...(checkIn && { checkIn }),
+    ...(checkOut && { checkOut }),
+    ...(guests && { guests }),
+    ...(area && { area: [area] }),
+  }), [searchQuery, checkIn, checkOut, guests, area]);
+
+  // Initialize filters only once
   useEffect(() => {
-    // Set initial filters
-    const initialFilters = {
-      ...(searchQuery && { search: searchQuery }),
-      ...(checkIn && { checkIn }),
-      ...(checkOut && { checkOut }),
-      ...(guests && { guests }),
-      ...(area && { area: [area] }),
-    };
-
-    // Only set filters if they're different from current filters
-    if (!areFiltersEqual(filters, initialFilters)) {
+    if (!isInitialized) {
       dispatch(setFilters(initialFilters));
+      setIsInitialized(true);
     }
-  }, [searchQuery, checkIn, checkOut, guests, area, dispatch]);
+  }, [dispatch, initialFilters, isInitialized]);
 
-  // Separate effect for fetching hotels when filters or sortBy change
+  // Fetch hotels when filters or sortBy change (debounced)
   useEffect(() => {
-    dispatch(fetchHotels({
-      ...filters,
-      sortBy,
-      page: 1,
-      limit: 12
-    }));
-  }, [filters, sortBy, dispatch]);
+    if (!isInitialized) return;
 
-  // Track search activity when filters change
-  useEffect(() => {
-    if (socket && isAuthenticated && (filters.search || filters.area)) {
-      socket.searchHotels({
-        query: filters.search || '',
-        area: filters.area?.[0] || '',
-        checkIn: filters.checkIn || '',
-        checkOut: filters.checkOut || '',
-        guests: filters.guests || 2
-      });
-    }
-  }, [socket, isAuthenticated, filters]);
+    const timeoutId = setTimeout(() => {
+      dispatch(fetchHotels({
+        ...filters,
+        sortBy,
+        page: 1,
+        limit: 12
+      }));
+    }, 300); // Debounce API calls
 
-  // Helper function for deep comparison (same as in slice)
-  const areFiltersEqual = (filters1: any, filters2: any): boolean => {
-    const keys1 = Object.keys(filters1);
-    const keys2 = Object.keys(filters2);
-    
-    if (keys1.length !== keys2.length) return false;
-    
-    for (const key of keys1) {
-      const val1 = filters1[key];
-      const val2 = filters2[key];
-      
-      if (Array.isArray(val1) && Array.isArray(val2)) {
-        if (val1.length !== val2.length || !val1.every((item, index) => item === val2[index])) {
-          return false;
-        }
-      } else if (val1 !== val2) {
-        return false;
-      }
-    }
-    
-    return true;
-  };
+    return () => clearTimeout(timeoutId);
+  }, [filters, sortBy, dispatch, isInitialized]);
 
-  const handleFiltersChange = (newFilters: any) => {
+  // Memoized handlers to prevent recreation
+  const handleFiltersChange = useCallback((newFilters: any) => {
     dispatch(setFilters(newFilters));
-    dispatch(fetchHotels({
-      ...newFilters,
-      sortBy,
-      page: 1,
-      limit: 12
-    }));
-  };
+  }, [dispatch]);
 
-  const handleSortChange = (newSortBy: string) => {
+  const handleSortChange = useCallback((newSortBy: string) => {
     setSortBy(newSortBy);
-    dispatch(fetchHotels({
-      ...filters,
-      sortBy: newSortBy,
-      page: 1,
-      limit: 12
-    }));
-  };
+  }, []);
 
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     dispatch(fetchHotels({
       ...filters,
       sortBy,
       page,
       limit: 12
     }));
-  };
+  }, [dispatch, filters, sortBy]);
 
-  const handleAreaSelect = (area: string) => {
-    const newFilters = { ...filters, area: [area] };
+  const handleAreaSelect = useCallback((selectedArea: string) => {
+    const newFilters = { ...filters, area: [selectedArea] };
     handleFiltersChange(newFilters);
-  };
+  }, [filters, handleFiltersChange]);
 
-  const handleHotelSelect = (hotel: any) => {
-    // Navigate to hotel details or show more info
+  const handleHotelSelect = useCallback((hotel: any) => {
     window.open(`/hotels/${hotel.id}`, '_blank');
-  };
+  }, []);
 
-  const clearAllFilters = () => {
+  const clearAllFilters = useCallback(() => {
     dispatch(clearFilters());
-    dispatch(fetchHotels({
-      sortBy: 'recommended',
-      page: 1,
-      limit: 12
-    }));
-  };
+    setSortBy('recommended');
+  }, [dispatch]);
+
+  // Memoized hotel data for map
+  const mapHotels = useMemo(() => 
+    hotels.map(hotel => ({
+      id: hotel._id,
+      name: hotel.name,
+      location: hotel.location,
+      rating: hotel.rating.average,
+      price: hotel.lowestPrice || hotel.roomTypes?.[0]?.price || 0,
+      image: hotel.images?.[0]?.url || ''
+    })), [hotels]
+  );
 
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto p-6">
           <div className="text-red-500 text-xl mb-4">Error loading hotels</div>
-          <p className="text-gray-600">{error}</p>
+          <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600"
+            className="bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors"
           >
             Retry
           </button>
@@ -160,34 +124,34 @@ const Hotels: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Search Header */}
       <div className="bg-white border-b border-orange-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 flex items-center space-x-2">
-                <MapPin className="h-6 w-6 text-orange-500" />
+              <h1 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center space-x-2">
+                <MapPin className="h-5 w-5 md:h-6 md:w-6 text-orange-500" />
                 <span>
-                  {searchParams.get('q') 
-                    ? `Hotels in "${searchParams.get('q')}"` 
+                  {searchQuery 
+                    ? `Hotels in "${searchQuery}"` 
                     : 'Hotels in Nagpur'
                   }
                 </span>
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-sm md:text-base text-gray-600 mt-1">
                 {loading ? 'Searching...' : `${hotels.length} properties found`}
-                {searchParams.get('checkin') && searchParams.get('checkout') && (
-                  <span> • {searchParams.get('checkin')} - {searchParams.get('checkout')}</span>
+                {checkIn && checkOut && (
+                  <span className="hidden sm:inline"> • {checkIn} - {checkOut}</span>
                 )}
-                {searchParams.get('guests') && (
-                  <span> • {searchParams.get('guests')} guests</span>
+                {guests && (
+                  <span> • {guests} guests</span>
                 )}
               </p>
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
               <select
                 value={sortBy}
                 onChange={(e) => handleSortChange(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="px-3 md:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm md:text-base"
               >
                 <option value="recommended">Recommended</option>
                 <option value="price-low">Price: Low to High</option>
@@ -196,65 +160,76 @@ const Hotels: React.FC = () => {
                 <option value="newest">Newest First</option>
               </select>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center justify-between sm:justify-start space-x-2">
+                <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2 rounded-md transition-colors ${
+                      viewMode === 'grid' 
+                        ? 'bg-white text-orange-600 shadow-sm' 
+                        : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    <Grid className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 rounded-md transition-colors ${
+                      viewMode === 'list' 
+                        ? 'bg-white text-orange-600 shadow-sm' 
+                        : 'text-gray-400 hover:text-gray-600'
+                    }`}
+                  >
+                    <List className="h-4 w-4" />
+                  </button>
+                </div>
+
                 <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-orange-100 text-orange-600' : 'text-gray-400'}`}
+                  onClick={() => setShowMap(!showMap)}
+                  className={`px-3 md:px-4 py-2 rounded-lg border transition-colors text-sm md:text-base ${
+                    showMap 
+                      ? 'bg-orange-500 text-white border-orange-500' 
+                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
                 >
-                  <Grid className="h-4 w-4" />
+                  <MapPin className="h-4 w-4 inline mr-1 md:mr-2" />
+                  <span className="hidden sm:inline">{showMap ? 'Hide Map' : 'Show Map'}</span>
+                  <span className="sm:hidden">Map</span>
                 </button>
+
                 <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-orange-100 text-orange-600' : 'text-gray-400'}`}
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="lg:hidden flex items-center space-x-2 px-3 md:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm md:text-base"
                 >
-                  <List className="h-4 w-4" />
+                  <SlidersHorizontal className="h-4 w-4" />
+                  <span>Filters</span>
                 </button>
               </div>
-
-              <button
-                onClick={() => setShowMap(!showMap)}
-                className={`px-4 py-2 rounded-lg border transition-colors ${
-                  showMap 
-                    ? 'bg-orange-500 text-white border-orange-500' 
-                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <MapPin className="h-4 w-4 inline mr-2" />
-                {showMap ? 'Hide Map' : 'Show Map'}
-              </button>
-
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="lg:hidden flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                <SlidersHorizontal className="h-4 w-4" />
-                <span>Filters</span>
-              </button>
             </div>
           </div>
 
           {/* Active Filters */}
           {(filters.area?.length || filters.amenities?.length || filters.rating) && (
-            <div className="mt-4 flex items-center space-x-2 flex-wrap">
+            <div className="mt-4 flex items-center space-x-2 flex-wrap gap-2">
               <span className="text-sm text-gray-600">Active filters:</span>
-              {filters.area?.map(area => (
-                <span key={area} className="bg-orange-100 text-orange-700 px-2 py-1 rounded text-sm">
-                  {area}
+              {filters.area?.map(areaFilter => (
+                <span key={areaFilter} className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs md:text-sm">
+                  {areaFilter}
                 </span>
               ))}
               {filters.amenities?.map(amenity => (
-                <span key={amenity} className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-sm">
+                <span key={amenity} className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs md:text-sm">
                   {amenity}
                 </span>
               ))}
               {filters.rating && (
-                <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-sm">
+                <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs md:text-sm">
                   {filters.rating}+ stars
                 </span>
               )}
               <button
                 onClick={clearAllFilters}
-                className="text-sm text-red-600 hover:text-red-700 underline"
+                className="text-xs md:text-sm text-red-600 hover:text-red-700 underline"
               >
                 Clear all
               </button>
@@ -263,27 +238,21 @@ const Hotels: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-8">
         {/* Map View */}
         {showMap && (
-          <div className="mb-8">
+          <div className="mb-6 md:mb-8">
             <NagpurMap
-              hotels={hotels.map(hotel => ({
-                id: hotel._id,
-                name: hotel.name,
-                location: hotel.location,
-                rating: hotel.rating.average,
-                price: hotel.lowestPrice || hotel.roomTypes?.[0]?.price || 0,
-                image: hotel.images?.[0]?.url || ''
-              }))}
+              hotels={mapHotels}
               selectedArea={filters.area?.[0]}
               onAreaSelect={handleAreaSelect}
               onHotelSelect={handleHotelSelect}
+              height="h-64 md:h-80 lg:h-96"
             />
           </div>
         )}
 
-        <div className="flex flex-col lg:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row gap-6 md:gap-8">
           {/* Filters Sidebar */}
           <div className={`lg:w-80 ${showFilters ? 'block' : 'hidden lg:block'}`}>
             <FilterSidebar 
@@ -308,30 +277,34 @@ const Hotels: React.FC = () => {
           {/* Hotels Grid */}
           <div className="flex-1">
             {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className={`grid gap-4 md:gap-6 ${
+                viewMode === 'grid' 
+                  ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3' 
+                  : 'grid-cols-1'
+              }`}>
                 {[...Array(6)].map((_, i) => (
                   <div key={i} className="animate-pulse">
-                    <div className="bg-gray-200 rounded-2xl h-80"></div>
+                    <div className="bg-gray-200 rounded-2xl h-64 md:h-80"></div>
                   </div>
                 ))}
               </div>
             ) : hotels.length === 0 ? (
-              <div className="text-center py-12">
-                <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No hotels found</h3>
-                <p className="text-gray-600 mb-4">Try adjusting your search criteria or filters.</p>
+              <div className="text-center py-8 md:py-12">
+                <Search className="h-8 w-8 md:h-12 md:w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-base md:text-lg font-medium text-gray-900 mb-2">No hotels found</h3>
+                <p className="text-sm md:text-base text-gray-600 mb-4">Try adjusting your search criteria or filters.</p>
                 <button
                   onClick={clearAllFilters}
-                  className="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600"
+                  className="bg-orange-500 text-white px-4 md:px-6 py-2 md:py-3 rounded-lg hover:bg-orange-600 transition-colors text-sm md:text-base"
                 >
                   Clear Filters
                 </button>
               </div>
             ) : (
               <>
-                <div className={`grid gap-6 ${
+                <div className={`grid gap-4 md:gap-6 ${
                   viewMode === 'grid' 
-                    ? 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3' 
+                    ? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3' 
                     : 'grid-cols-1'
                 }`}>
                   {hotels.map((hotel) => (
@@ -357,36 +330,41 @@ const Hotels: React.FC = () => {
 
                 {/* Pagination */}
                 {pagination.pages > 1 && (
-                  <div className="mt-8 flex justify-center">
-                    <div className="flex items-center space-x-2">
+                  <div className="mt-6 md:mt-8 flex justify-center">
+                    <div className="flex items-center space-x-1 md:space-x-2">
                       <button
                         onClick={() => handlePageChange(pagination.current - 1)}
                         disabled={!pagination.hasPrev}
-                        className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                        className="px-2 md:px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 text-sm md:text-base"
                       >
-                        Previous
+                        <span className="hidden sm:inline">Previous</span>
+                        <span className="sm:hidden">Prev</span>
                       </button>
                       
-                      {[...Array(pagination.pages)].map((_, i) => (
-                        <button
-                          key={i + 1}
-                          onClick={() => handlePageChange(i + 1)}
-                          className={`px-3 py-2 border rounded-lg ${
-                            pagination.current === i + 1
-                              ? 'bg-orange-500 text-white border-orange-500'
-                              : 'border-gray-300 hover:bg-gray-50'
-                          }`}
-                        >
-                          {i + 1}
-                        </button>
-                      ))}
+                      {[...Array(Math.min(pagination.pages, 5))].map((_, i) => {
+                        const pageNum = i + 1;
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => handlePageChange(pageNum)}
+                            className={`px-2 md:px-3 py-2 border rounded-lg text-sm md:text-base ${
+                              pagination.current === pageNum
+                                ? 'bg-orange-500 text-white border-orange-500'
+                                : 'border-gray-300 hover:bg-gray-50'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
                       
                       <button
                         onClick={() => handlePageChange(pagination.current + 1)}
                         disabled={!pagination.hasNext}
-                        className="px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                        className="px-2 md:px-3 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 text-sm md:text-base"
                       >
-                        Next
+                        <span className="hidden sm:inline">Next</span>
+                        <span className="sm:hidden">Next</span>
                       </button>
                     </div>
                   </div>
