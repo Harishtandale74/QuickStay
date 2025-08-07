@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { 
@@ -15,12 +15,7 @@ import {
   Star,
   Phone,
   Info,
-  ChevronDown,
-  Bell,
-  Shield,
-  Globe,
-  Compass,
-  Building
+  ChevronDown
 } from 'lucide-react';
 import { RootState } from '../../store/store';
 import { logout } from '../../store/slices/authSlice';
@@ -30,33 +25,10 @@ import ConnectionStatus from '../RealTime/ConnectionStatus';
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Handle scroll effect
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Close menus when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (!target.closest('.user-menu') && !target.closest('.mobile-menu')) {
-        setShowUserMenu(false);
-        setIsMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -70,36 +42,31 @@ const Header: React.FC = () => {
       name: 'Home',
       path: '/',
       icon: <Home className="h-4 w-4" />,
-      description: 'Discover hotels in Nagpur',
-      badge: null
+      description: 'Discover hotels in Nagpur'
     },
     {
       name: 'Hotels',
       path: '/hotels',
       icon: <Search className="h-4 w-4" />,
-      description: 'Search & book hotels',
-      badge: 'Popular'
+      description: 'Search & book hotels'
     },
     {
       name: 'Explore Nagpur',
       path: '/explore',
-      icon: <Compass className="h-4 w-4" />,
-      description: 'Attractions & local guide',
-      badge: 'New'
+      icon: <MapPin className="h-4 w-4" />,
+      description: 'Attractions & local guide'
     },
     {
       name: 'About',
       path: '/about',
       icon: <Info className="h-4 w-4" />,
-      description: 'About our platform',
-      badge: null
+      description: 'About our platform'
     },
     {
       name: 'Contact',
       path: '/contact',
       icon: <Phone className="h-4 w-4" />,
-      description: 'Get in touch with us',
-      badge: null
+      description: 'Get in touch with us'
     }
   ];
 
@@ -110,49 +77,20 @@ const Header: React.FC = () => {
     return location.pathname.startsWith(path);
   };
 
-  const getUserInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
-  };
-
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case 'admin': return 'from-purple-500 to-purple-600';
-      case 'hotelOwner': return 'from-blue-500 to-blue-600';
-      default: return 'from-green-500 to-green-600';
-    }
-  };
-
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case 'admin': return 'Administrator';
-      case 'hotelOwner': return 'Hotel Owner';
-      default: return 'Traveler';
-    }
-  };
-
   return (
-    <header className={`sticky top-0 z-50 transition-all duration-300 ${
-      scrolled 
-        ? 'bg-white/95 backdrop-blur-md shadow-lg border-b border-orange-200' 
-        : 'bg-white shadow-sm border-b border-gray-200'
-    }`}>
+    <header className="bg-white shadow-sm border-b sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3 group">
-            <div className={`bg-gradient-to-r from-orange-500 to-red-600 p-2.5 rounded-xl group-hover:from-orange-600 group-hover:to-red-700 transition-all duration-300 ${
-              scrolled ? 'shadow-lg' : ''
-            }`}>
+          <Link to="/" className="flex items-center space-x-2 group">
+            <div className="bg-gradient-to-r from-orange-500 to-red-600 p-2 rounded-lg group-hover:from-orange-600 group-hover:to-red-700 transition-all duration-300">
               <Hotel className="h-6 w-6 text-white" />
             </div>
             <div>
-              <span className="text-xl font-bold text-gray-900 group-hover:text-orange-600 transition-colors">
-                QuickStay
-              </span>
+              <span className="text-xl font-bold text-gray-900">QuickStay</span>
               <div className="flex items-center space-x-1 text-xs text-orange-600">
                 <MapPin className="h-3 w-3" />
-                <span className="font-medium">Nagpur</span>
-                <div className="w-1 h-1 bg-orange-500 rounded-full animate-pulse"></div>
+                <span>Nagpur</span>
               </div>
             </div>
           </Link>
@@ -163,29 +101,14 @@ const Header: React.FC = () => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`group relative px-4 py-2.5 rounded-xl font-medium transition-all duration-300 flex items-center space-x-2 ${
+                className={`group relative px-4 py-2 rounded-lg font-medium transition-all duration-300 flex items-center space-x-2 ${
                   isActivePath(item.path)
-                    ? 'text-orange-600 bg-gradient-to-r from-orange-50 to-red-50 shadow-sm'
-                    : 'text-gray-700 hover:text-orange-600 hover:bg-gradient-to-r hover:from-orange-50 hover:to-red-50'
+                    ? 'text-orange-600 bg-orange-50'
+                    : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50'
                 }`}
               >
-                <div className={`transition-transform duration-300 ${
-                  isActivePath(item.path) ? 'scale-110' : 'group-hover:scale-110'
-                }`}>
-                  {item.icon}
-                </div>
+                {item.icon}
                 <span>{item.name}</span>
-                
-                {/* Badge */}
-                {item.badge && (
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                    item.badge === 'New' 
-                      ? 'bg-green-100 text-green-700' 
-                      : 'bg-blue-100 text-blue-700'
-                  }`}>
-                    {item.badge}
-                  </span>
-                )}
                 
                 {/* Tooltip */}
                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-50">
@@ -197,7 +120,7 @@ const Header: React.FC = () => {
           </nav>
 
           {/* Right Side Actions */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-4">
             {/* Connection Status */}
             <ConnectionStatus />
 
@@ -206,154 +129,108 @@ const Header: React.FC = () => {
                 {/* Notifications */}
                 <NotificationCenter />
                 
-                {/* Quick Actions */}
-                <div className="hidden md:flex items-center space-x-2">
+                {/* Dashboard Link */}
+                <Link
+                  to="/dashboard"
+                  className={`hidden md:flex items-center space-x-1 px-3 py-2 rounded-lg font-medium transition-colors ${
+                    isActivePath('/dashboard')
+                      ? 'text-orange-600 bg-orange-50'
+                      : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50'
+                  }`}
+                >
+                  <Calendar className="h-4 w-4" />
+                  <span>Dashboard</span>
+                </Link>
+                
+                {/* Admin Panel Link */}
+                {user?.role === 'admin' && (
                   <Link
-                    to="/dashboard"
-                    className={`flex items-center space-x-1 px-3 py-2 rounded-lg font-medium transition-all duration-300 ${
-                      isActivePath('/dashboard')
-                        ? 'text-orange-600 bg-orange-50 shadow-sm'
+                    to="/admin"
+                    className={`hidden md:flex items-center space-x-1 px-3 py-2 rounded-lg font-medium transition-colors ${
+                      isActivePath('/admin')
+                        ? 'text-orange-600 bg-orange-50'
                         : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50'
                     }`}
                   >
-                    <Calendar className="h-4 w-4" />
-                    <span>Dashboard</span>
+                    <Settings className="h-4 w-4" />
+                    <span>Admin</span>
                   </Link>
-                  
-                  {user?.role === 'admin' && (
-                    <Link
-                      to="/admin"
-                      className={`flex items-center space-x-1 px-3 py-2 rounded-lg font-medium transition-all duration-300 ${
-                        isActivePath('/admin')
-                          ? 'text-purple-600 bg-purple-50 shadow-sm'
-                          : 'text-gray-700 hover:text-purple-600 hover:bg-purple-50'
-                      }`}
-                    >
-                      <Shield className="h-4 w-4" />
-                      <span>Admin</span>
-                    </Link>
-                  )}
-
-                  {user?.role === 'hotelOwner' && (
-                    <Link
-                      to="/dashboard/add-hotel"
-                      className="flex items-center space-x-1 px-3 py-2 rounded-lg font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-all duration-300"
-                    >
-                      <Building className="h-4 w-4" />
-                      <span>Add Hotel</span>
-                    </Link>
-                  )}
-                </div>
+                )}
                 
                 {/* User Menu */}
-                <div className="relative user-menu">
+                <div className="relative">
                   <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex items-center space-x-3 text-gray-700 hover:text-orange-600 transition-colors p-2 rounded-xl hover:bg-orange-50 group"
+                    className="flex items-center space-x-2 text-gray-700 hover:text-orange-600 transition-colors p-2 rounded-lg hover:bg-orange-50"
                   >
-                    <div className={`w-10 h-10 bg-gradient-to-r ${getRoleColor(user?.role || 'user')} rounded-full flex items-center justify-center text-white font-bold shadow-lg group-hover:shadow-xl transition-all duration-300`}>
-                      {user?.name ? getUserInitials(user.name) : <User className="h-5 w-5" />}
+                    <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center">
+                      <User className="h-4 w-4 text-white" />
                     </div>
-                    <div className="hidden md:block text-left">
-                      <div className="font-medium text-sm">{user?.name}</div>
-                      <div className="text-xs text-gray-500">{getRoleLabel(user?.role || 'user')}</div>
-                    </div>
-                    <ChevronDown className={`h-4 w-4 transition-transform duration-300 ${showUserMenu ? 'rotate-180' : ''}`} />
+                    <span className="hidden md:block font-medium">{user?.name}</span>
+                    <ChevronDown className="h-4 w-4" />
                   </button>
                   
                   {showUserMenu && (
-                    <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-200 py-2 z-50 animate-scale-in">
-                      {/* User Info Header */}
-                      <div className="px-6 py-4 border-b border-gray-100">
-                        <div className="flex items-center space-x-3">
-                          <div className={`w-12 h-12 bg-gradient-to-r ${getRoleColor(user?.role || 'user')} rounded-full flex items-center justify-center text-white font-bold`}>
-                            {user?.name ? getUserInitials(user.name) : <User className="h-6 w-6" />}
-                          </div>
-                          <div className="flex-1">
-                            <p className="font-semibold text-gray-900">{user?.name}</p>
-                            <p className="text-sm text-gray-600">{user?.email}</p>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                user?.role === 'admin' 
-                                  ? 'bg-purple-100 text-purple-700'
-                                  : user?.role === 'hotelOwner'
-                                  ? 'bg-blue-100 text-blue-700'
-                                  : 'bg-green-100 text-green-700'
-                              }`}>
-                                {getRoleLabel(user?.role || 'user')}
-                              </span>
-                              {user?.loyaltyPoints && (
-                                <div className="flex items-center space-x-1">
-                                  <Star className="h-3 w-3 text-yellow-500" />
-                                  <span className="text-xs text-gray-600 font-medium">{user.loyaltyPoints} pts</span>
-                                </div>
-                              )}
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <p className="font-medium text-gray-900">{user?.name}</p>
+                        <p className="text-sm text-gray-600">{user?.email}</p>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            user?.role === 'admin' 
+                              ? 'bg-purple-100 text-purple-700'
+                              : user?.role === 'hotelOwner'
+                              ? 'bg-blue-100 text-blue-700'
+                              : 'bg-green-100 text-green-700'
+                          }`}>
+                            {user?.role === 'hotelOwner' ? 'Hotel Owner' : user?.role}
+                          </span>
+                          {user?.loyaltyPoints && (
+                            <div className="flex items-center space-x-1">
+                              <Star className="h-3 w-3 text-yellow-500" />
+                              <span className="text-xs text-gray-600">{user.loyaltyPoints} pts</span>
                             </div>
-                          </div>
+                          )}
                         </div>
                       </div>
                       
-                      {/* Menu Items */}
-                      <div className="py-2">
+                      <Link
+                        to="/profile"
+                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <User className="h-4 w-4" />
+                        <span>My Profile</span>
+                      </Link>
+                      
+                      <Link
+                        to="/dashboard"
+                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <Calendar className="h-4 w-4" />
+                        <span>My Bookings</span>
+                      </Link>
+                      
+                      {user?.role === 'hotelOwner' && (
                         <Link
-                          to="/profile"
+                          to="/dashboard/add-hotel"
                           onClick={() => setShowUserMenu(false)}
-                          className="flex items-center space-x-3 px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                          className="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                         >
-                          <User className="h-4 w-4" />
-                          <span>My Profile</span>
+                          <Hotel className="h-4 w-4" />
+                          <span>Add Hotel</span>
                         </Link>
-                        
-                        <Link
-                          to="/dashboard"
-                          onClick={() => setShowUserMenu(false)}
-                          className="flex items-center space-x-3 px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      )}
+                      
+                      <div className="border-t border-gray-100 mt-2 pt-2">
+                        <button
+                          onClick={handleLogout}
+                          className="flex items-center space-x-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left"
                         >
-                          <Calendar className="h-4 w-4" />
-                          <span>My Bookings</span>
-                        </Link>
-                        
-                        {user?.role === 'hotelOwner' && (
-                          <>
-                            <Link
-                              to="/dashboard/add-hotel"
-                              onClick={() => setShowUserMenu(false)}
-                              className="flex items-center space-x-3 px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                            >
-                              <Building className="h-4 w-4" />
-                              <span>Add Hotel</span>
-                            </Link>
-                            <Link
-                              to="/dashboard"
-                              onClick={() => setShowUserMenu(false)}
-                              className="flex items-center space-x-3 px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                            >
-                              <Hotel className="h-4 w-4" />
-                              <span>Manage Hotels</span>
-                            </Link>
-                          </>
-                        )}
-
-                        {user?.role === 'admin' && (
-                          <Link
-                            to="/admin"
-                            onClick={() => setShowUserMenu(false)}
-                            className="flex items-center space-x-3 px-6 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                          >
-                            <Shield className="h-4 w-4" />
-                            <span>Admin Panel</span>
-                          </Link>
-                        )}
-                        
-                        <div className="border-t border-gray-100 mt-2 pt-2">
-                          <button
-                            onClick={handleLogout}
-                            className="flex items-center space-x-3 px-6 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors w-full text-left"
-                          >
-                            <LogOut className="h-4 w-4" />
-                            <span>Sign Out</span>
-                          </button>
-                        </div>
+                          <LogOut className="h-4 w-4" />
+                          <span>Sign Out</span>
+                        </button>
                       </div>
                     </div>
                   )}
@@ -369,7 +246,7 @@ const Header: React.FC = () => {
                 </Link>
                 <Link
                   to="/register"
-                  className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white px-6 py-2.5 rounded-xl font-medium transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
+                  className="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                 >
                   Sign Up
                 </Link>
@@ -379,7 +256,7 @@ const Header: React.FC = () => {
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="lg:hidden p-2 text-gray-700 hover:text-orange-600 transition-colors rounded-lg hover:bg-orange-50 mobile-menu"
+              className="lg:hidden p-2 text-gray-700 hover:text-orange-600 transition-colors rounded-lg hover:bg-orange-50"
             >
               {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
@@ -388,44 +265,33 @@ const Header: React.FC = () => {
 
         {/* Mobile Navigation */}
         {isMenuOpen && (
-          <div className="lg:hidden border-t py-4 animate-fade-in mobile-menu">
+          <div className="lg:hidden border-t py-4 animate-fade-in">
             <div className="flex flex-col space-y-2">
               {navigationItems.map((item) => (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition-all duration-300 ${
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg font-medium transition-colors ${
                     isActivePath(item.path)
-                      ? 'text-orange-600 bg-gradient-to-r from-orange-50 to-red-50'
+                      ? 'text-orange-600 bg-orange-50'
                       : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50'
                   }`}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {item.icon}
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <span>{item.name}</span>
-                      {item.badge && (
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                          item.badge === 'New' 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-blue-100 text-blue-700'
-                        }`}>
-                          {item.badge}
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 mt-0.5">{item.description}</p>
+                  <div>
+                    <span>{item.name}</span>
+                    <p className="text-xs text-gray-500">{item.description}</p>
                   </div>
                 </Link>
               ))}
               
               {isAuthenticated && (
                 <>
-                  <div className="border-t border-gray-200 my-3"></div>
+                  <div className="border-t border-gray-200 my-2"></div>
                   <Link
                     to="/dashboard"
-                    className="flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 transition-colors"
+                    className="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <Calendar className="h-4 w-4" />
@@ -435,28 +301,17 @@ const Header: React.FC = () => {
                   {user?.role === 'admin' && (
                     <Link
                       to="/admin"
-                      className="flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-gray-700 hover:text-purple-600 hover:bg-purple-50 transition-colors"
+                      className="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 transition-colors"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      <Shield className="h-4 w-4" />
+                      <Settings className="h-4 w-4" />
                       <span>Admin Panel</span>
-                    </Link>
-                  )}
-
-                  {user?.role === 'hotelOwner' && (
-                    <Link
-                      to="/dashboard/add-hotel"
-                      className="flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <Building className="h-4 w-4" />
-                      <span>Add Hotel</span>
                     </Link>
                   )}
                   
                   <Link
                     to="/profile"
-                    className="flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 transition-colors"
+                    className="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium text-gray-700 hover:text-orange-600 hover:bg-orange-50 transition-colors"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <User className="h-4 w-4" />
@@ -465,7 +320,7 @@ const Header: React.FC = () => {
                   
                   <button
                     onClick={handleLogout}
-                    className="flex items-center space-x-3 px-4 py-3 rounded-xl font-medium text-red-600 hover:bg-red-50 transition-colors w-full text-left"
+                    className="flex items-center space-x-3 px-4 py-3 rounded-lg font-medium text-red-600 hover:bg-red-50 transition-colors w-full text-left"
                   >
                     <LogOut className="h-4 w-4" />
                     <span>Sign Out</span>

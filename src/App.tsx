@@ -19,7 +19,6 @@ import HotelDetails from './pages/HotelDetails';
 import Profile from './pages/Profile';
 import { fetchUserProfile } from './store/slices/authSlice';
 import { RootState, AppDispatch } from './store/store';
-import ChatBot from './components/AI/ChatBot';
 
 const AppContent: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -48,7 +47,6 @@ const AppContent: React.FC = () => {
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="/profile" element={<Profile />} />
       </Routes>
-      <ChatBot />
     </Layout>
   );
 };
