@@ -347,8 +347,8 @@ export const nagpurAPI = {
   // Auth endpoints with better error handling
   register: async (data: any) => {
     try {
-      // Use real API when backend is available
-      if (import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+      // Use mock for development
+      if (import.meta.env.DEV) {
         return await mockApiCall('/auth/register', 'POST', data);
       }
       return await api.post('/auth/register', data);
@@ -359,7 +359,7 @@ export const nagpurAPI = {
 
   login: async (data: any) => {
     try {
-      if (import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+      if (import.meta.env.DEV) {
         return await mockApiCall('/auth/login', 'POST', data);
       }
       return await api.post('/auth/login', data);
@@ -370,7 +370,7 @@ export const nagpurAPI = {
 
   getProfile: async () => {
     try {
-      if (import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+      if (import.meta.env.DEV) {
         return await mockApiCall('/auth/me');
       }
       return await api.get('/auth/me');
@@ -387,7 +387,7 @@ export const nagpurAPI = {
   // Hotels endpoints with real-time features
   getHotels: async (params = {}) => {
     try {
-      if (import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+      if (import.meta.env.DEV) {
         return await mockApiCall('/hotels');
       }
       return await api.get('/hotels', { params });
@@ -398,7 +398,7 @@ export const nagpurAPI = {
 
   getFeaturedHotels: async () => {
     try {
-      if (import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+      if (import.meta.env.DEV) {
         return await mockApiCall('/hotels/featured');
       }
       return await api.get('/hotels/featured');
@@ -433,7 +433,7 @@ export const nagpurAPI = {
   
   getMyBookings: async (params = {}) => {
     try {
-      if (import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+      if (import.meta.env.DEV) {
         return await mockApiCall('/bookings/my-bookings');
       }
       return await api.get('/bookings/my-bookings', { params });
@@ -447,7 +447,7 @@ export const nagpurAPI = {
   
   getBookingAnalytics: async () => {
     try {
-      if (import.meta.env.VITE_ENABLE_MOCK_DATA === 'true') {
+      if (import.meta.env.DEV) {
         return await mockApiCall('/bookings/analytics/real-time');
       }
       return await api.get('/bookings/analytics/real-time');
