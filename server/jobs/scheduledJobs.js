@@ -4,16 +4,23 @@ const Hotel = require('../models/Hotel');
 const User = require('../models/User');
 const nodemailer = require('nodemailer');
 
-// Email transporter setup
-const transporter = nodemailer.createTransporter({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+// Email transporter setup with error handling
+let transporter = null;
+try {
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    transporter = nodemailer.createTransporter({
+      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+      port: process.env.EMAIL_PORT || 587,
+      secure: false,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
   }
-});
+} catch (error) {
+  console.log('⚠️  Email transporter not configured. Email notifications will be disabled.');
+}
 
 // Send check-in reminders (runs every hour)
 cron.schedule('0 * * * *', async () => {
