@@ -247,6 +247,20 @@ module.exports = (io) => {
     });
   }, 30000);
 
+  // Emit weather updates every 10 minutes
+  const axios = require('axios');
+  setInterval(async () => {
+    try {
+      const response = await axios.get(`http://localhost:${process.env.PORT || 5000}/api/weather/current`);
+      io.emit('weatherUpdate', {
+        ...response.data,
+        timestamp: new Date()
+      });
+    } catch (error) {
+      console.error('Failed to fetch weather for socket broadcast:', error.message);
+    }
+  }, 600000); // Every 10 minutes
+
   // Emit daily booking summary at midnight
   const cron = require('node-cron');
   cron.schedule('0 0 * * *', async () => {
