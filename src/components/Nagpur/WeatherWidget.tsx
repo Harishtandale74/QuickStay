@@ -99,21 +99,43 @@ const WeatherWidget: React.FC = () => {
       const response = await nagpurAPI.getNagpurWeather();
       const data = response.data;
       
-      setWeather(prev => ({
-        ...prev,
-        temperature: data.temperature,
-        feelsLike: data.temperature + Math.floor(Math.random() * 6) - 3,
-        humidity: data.humidity,
-        windSpeed: data.windSpeed,
-        windDirection: ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.floor(Math.random() * 8)],
-        visibility: data.visibility,
-        pressure: 1000 + Math.floor(Math.random() * 50),
-        uvIndex: Math.floor(Math.random() * 11),
-        condition: data.condition,
-        description: data.description,
-        sunrise: '06:' + (25 + Math.floor(Math.random() * 10)),
-        sunset: '18:' + (40 + Math.floor(Math.random() * 20)),
-      }));
+      // Check if we got mock data and show appropriate error
+      if (data.mock) {
+        setError(data.message || data.error || 'Using offline weather data');
+      }
+      
+      // Map API condition to our condition types
+      const mapCondition = (apiCondition: string): WeatherData['condition'] => {
+        const condition = apiCondition.toLowerCase();
+        if (condition.includes('clear') || condition.includes('sun')) return 'sunny';
+        if (condition.includes('rain') || condition.includes('drizzle')) return 'rainy';
+        if (condition.includes('cloud')) return 'cloudy';
+        if (condition.includes('storm')) return 'stormy';
+        return 'partly-cloudy';
+      };
+      
+      // Extract forecast data or use defaults
+      const forecastData = data.forecast || weather.forecast;
+      
+      // Extract sunrise/sunset
+      const sunrise = data.sun?.sunrise ? new Date(data.sun.sunrise) : new Date();
+      const sunset = data.sun?.sunset ? new Date(data.sun.sunset) : new Date();
+      
+      setWeather({
+        temperature: data.current?.temperature || 28,
+        feelsLike: data.current?.feelsLike || data.current?.temperature || 30,
+        humidity: data.current?.humidity || 65,
+        windSpeed: data.current?.windSpeed || 12,
+        windDirection: data.current?.windDirection || 'NE',
+        visibility: data.current?.visibility || 10,
+        pressure: data.current?.pressure || 1013,
+        uvIndex: data.current?.uvIndex || 6,
+        condition: mapCondition(data.current?.condition || 'Clear'),
+        description: data.current?.description || 'Perfect weather for exploring Nagpur',
+        sunrise: sunrise.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        sunset: sunset.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        forecast: forecastData
+      });
       
       setLastUpdated(new Date());
     } catch (error) {
