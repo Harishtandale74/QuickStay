@@ -90,6 +90,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/users', authenticateToken, userRoutes);
 app.use('/api/admin', authenticateToken, adminRoutes);
 app.use('/api/analytics', authenticateToken, analyticsRoutes);
+app.use('/api/weather', weatherRoutes); // Public weather API
 
 // Health check
 app.get('/api/health', (req, res) => {
