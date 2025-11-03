@@ -16,6 +16,7 @@ const bookingRoutes = require('./routes/bookings');
 const userRoutes = require('./routes/users');
 const adminRoutes = require('./routes/admin');
 const analyticsRoutes = require('./routes/analytics');
+const weatherRoutes = require('./routes/weather');
 
 // Import middleware
 const { authenticateToken } = require('./middleware/auth');
