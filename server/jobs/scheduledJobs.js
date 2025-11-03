@@ -45,7 +45,7 @@ cron.schedule('0 * * * *', async () => {
         notif => notif.type === 'check_in_reminder'
       );
 
-      if (!reminderSent) {
+      if (!reminderSent && transporter) {
         // Send email reminder
         const mailOptions = {
           from: process.env.EMAIL_USER,
@@ -67,15 +67,19 @@ cron.schedule('0 * * * *', async () => {
           `
         };
 
-        await transporter.sendMail(mailOptions);
-
-        // Update notification record
-        booking.notifications.push({
-          type: 'check_in_reminder',
-          sentAt: new Date(),
-          method: 'email'
-        });
-        await booking.save();
+        try {
+          await transporter.sendMail(mailOptions);
+          
+          // Update notification record
+          booking.notifications.push({
+            type: 'check_in_reminder',
+            sentAt: new Date(),
+            method: 'email'
+          });
+          await booking.save();
+        } catch (emailError) {
+          console.error('Failed to send reminder email:', emailError.message);
+        }
       }
     }
 
