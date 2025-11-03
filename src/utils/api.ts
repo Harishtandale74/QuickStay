@@ -466,22 +466,53 @@ export const nagpurAPI = {
     return api.get(endpoint);
   },
 
-  // Weather integration for Nagpur
+  // Weather integration for Nagpur - Real-time weather API
   getNagpurWeather: async () => {
     try {
-      // Mock weather data for Nagpur
+      // Call the real backend weather API
+      const response = await api.get('/weather/current');
+      return response;
+    } catch (error: any) {
+      console.error('Weather API error:', error);
+      // Return fallback mock data on error
       return {
         data: {
-          temperature: 28 + Math.floor(Math.random() * 10),
-          humidity: 60 + Math.floor(Math.random() * 20),
-          condition: ['sunny', 'cloudy', 'partly-cloudy'][Math.floor(Math.random() * 3)],
-          windSpeed: 10 + Math.floor(Math.random() * 15),
-          visibility: 8 + Math.floor(Math.random() * 2),
-          description: 'Perfect weather for exploring Nagpur!'
+          location: {
+            city: 'Nagpur',
+            state: 'Maharashtra',
+            country: 'India',
+            lat: 21.1458,
+            lon: 79.0882
+          },
+          current: {
+            temperature: 28 + Math.floor(Math.random() * 10),
+            feelsLike: 30 + Math.floor(Math.random() * 8),
+            humidity: 60 + Math.floor(Math.random() * 20),
+            condition: ['Clear', 'Clouds', 'Rain'][Math.floor(Math.random() * 3)],
+            description: 'Perfect weather for exploring Nagpur!',
+            windSpeed: 10 + Math.floor(Math.random() * 15),
+            windDirection: ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.floor(Math.random() * 8)],
+            visibility: 8 + Math.floor(Math.random() * 2),
+            pressure: 1013,
+            uvIndex: Math.floor(Math.random() * 11),
+            icon: '01d'
+          },
+          sun: {
+            sunrise: new Date().setHours(6, 30, 0, 0),
+            sunset: new Date().setHours(18, 45, 0, 0)
+          },
+          forecast: [
+            { day: 'Today', high: 32, low: 22, condition: 'Sunny', icon: '☀️', humidity: 65, windSpeed: 12 },
+            { day: 'Tomorrow', high: 30, low: 20, condition: 'Partly Cloudy', icon: '⛅', humidity: 70, windSpeed: 10 },
+            { day: 'Wed', high: 28, low: 18, condition: 'Cloudy', icon: '☁️', humidity: 75, windSpeed: 8 },
+            { day: 'Thu', high: 26, low: 16, condition: 'Light Rain', icon: '🌦️', humidity: 85, windSpeed: 15 },
+            { day: 'Fri', high: 29, low: 19, condition: 'Sunny', icon: '☀️', humidity: 60, windSpeed: 10 }
+          ],
+          timestamp: new Date().toISOString(),
+          mock: true,
+          error: 'Using fallback weather data'
         }
       };
-    } catch (error: any) {
-      throw new Error('Failed to fetch weather data');
     }
   },
 
