@@ -215,7 +215,7 @@ cron.schedule('0 9 * * 0', async () => {
         }
       ]);
 
-      if (weeklyStats.length > 0) {
+      if (weeklyStats.length > 0 && transporter) {
         // Send weekly report email
         const mailOptions = {
           from: process.env.EMAIL_USER,
@@ -236,7 +236,11 @@ cron.schedule('0 9 * * 0', async () => {
           `
         };
 
-        await transporter.sendMail(mailOptions);
+        try {
+          await transporter.sendMail(mailOptions);
+        } catch (emailError) {
+          console.error('Failed to send weekly report:', emailError.message);
+        }
       }
     }
 
